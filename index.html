@@ -777,7 +777,7 @@
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">Kategori Cuti Berdasarkan Jabatan</div>
-          <div id="jabatanInfo" class="mini">Aturan kuota</div>
+          <div id="jabatanInfo" class="mini">Bulan ini & depan</div>
         </div>
         <div class="panel-body">
           <div id="jabatanSummary" class="legend"></div>
@@ -1423,20 +1423,32 @@
     }
 
     function renderJabatanSummary(records) {
+      // Khusus panel Kategori Cuti Berdasarkan Jabatan:
+      // Data status AKAN CUTI / mendatang hanya dihitung untuk bulan ini dan bulan depan.
+      // Status SEDANG CUTI tetap dihitung karena sedang berjalan hari ini.
+      const summaryRecords = records.filter(r => {
+        const status = String(r.status || '').toUpperCase();
+        if (status === 'SEDANG CUTI') return true;
+        if (status === 'AKAN CUTI') return isThisMonthOrNextMonth(r.startMs);
+        return false;
+      });
+
       const selectedJabatan = document.getElementById('jabatanFilter').value;
       const jobs = selectedJabatan === 'ALL'
-        ? sortJabatan(unique(records.map(r => normalizeJabatan(r.jabatan))))
+        ? sortJabatan(unique(summaryRecords.map(r => normalizeJabatan(r.jabatan))))
         : [selectedJabatan];
 
       const rows = jobs.map(j => {
-        const data = records.filter(r => normalizeJabatan(r.jabatan) === j);
+        const data = summaryRecords.filter(r => normalizeJabatan(r.jabatan) === j);
         const staff = unique(data.map(r => r.nama).filter(Boolean)).length;
         const pengajuan = data.length;
         const hari = sum(data.map(r => Number(r.totalHari || 0)));
+        const mendatang = data.filter(r => String(r.status || '').toUpperCase() === 'AKAN CUTI').length;
+        const berjalan = data.filter(r => String(r.status || '').toUpperCase() === 'SEDANG CUTI').length;
         const rule = jabatanRules[j] || { kuota: 0, label: j, detail: 'Kategori khusus' };
         const totalKuota = rule.kuota && staff ? rule.kuota * staff : rule.kuota;
         const sisa = totalKuota ? Math.max(totalKuota - hari, 0) : 0;
-        return { jabatan: j, staff, pengajuan, hari, totalKuota, sisa, rule };
+        return { jabatan: j, staff, pengajuan, hari, mendatang, berjalan, totalKuota, sisa, rule };
       });
 
       document.getElementById('jabatanSummary').innerHTML = rows.length
@@ -1447,12 +1459,18 @@
               <b>${formatNumber(r.rule.kuota)} hari / staff</b>
             </div>
             <div class="quota-detail">${escapeHtml(r.rule.detail || '')}</div>
-            <div class="quota-detail">Staff: <b>${formatNumber(r.staff)}</b> • Pengajuan: <b>${formatNumber(r.pengajuan)}</b> • Hari aktif/mendatang: <b>${formatNumber(r.hari)}</b>${r.totalKuota ? ' • Est. sisa kuota: <b>' + formatNumber(r.sisa) + '</b>' : ''}</div>
+            <div class="quota-detail">
+              Staff: <b>${formatNumber(r.staff)}</b>
+              • Berjalan: <b>${formatNumber(r.berjalan)}</b>
+              • Mendatang bulan ini/depan: <b>${formatNumber(r.mendatang)}</b>
+              • Total pengajuan: <b>${formatNumber(r.pengajuan)}</b>
+              • Hari: <b>${formatNumber(r.hari)}</b>${r.totalKuota ? ' • Est. sisa kuota: <b>' + formatNumber(r.sisa) + '</b>' : ''}
+            </div>
           </div>
         `).join('')
-        : '<div class="empty">Belum ada data jabatan sesuai filter.</div>';
+        : '<div class="empty">Belum ada data jabatan untuk bulan ini dan bulan depan.</div>';
 
-      document.getElementById('jabatanInfo').textContent = `${formatNumber(rows.length)} kategori`;
+      document.getElementById('jabatanInfo').textContent = `${formatNumber(rows.length)} kategori • bulan ini & depan`;
     }
 
     function renderUpcoming(records) {
@@ -1542,6 +1560,20 @@
       document.getElementById(id).textContent = value;
     }
 
+
+
+    function isThisMonthOrNextMonth(ms) {
+      if (!ms) return false;
+
+      const date = new Date(Number(ms));
+      if (Number.isNaN(date.getTime())) return false;
+
+      const now = new Date();
+      const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+      const afterNextMonthStart = new Date(now.getFullYear(), now.getMonth() + 2, 1).getTime();
+
+      return date.getTime() >= currentMonthStart && date.getTime() < afterNextMonthStart;
+    }
 
     function normalizeJabatan(value) {
       const raw = String(value || '').trim().toUpperCase();
