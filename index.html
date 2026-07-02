@@ -586,6 +586,55 @@
       margin-top: 12px;
     }
 
+
+    .month-group {
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, .11);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, .14);
+      margin-bottom: 12px;
+    }
+
+    .month-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--gold);
+      font-weight: 900;
+      margin-bottom: 10px;
+    }
+
+    .jabatan-row {
+      display: grid;
+      grid-template-columns: 150px 1fr 48px;
+      gap: 10px;
+      align-items: center;
+      margin: 7px 0;
+      font-size: 12px;
+      color: rgba(255, 255, 255, .86);
+    }
+
+    .quota-card {
+      display: grid;
+      gap: 6px;
+    }
+
+    .quota-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .quota-detail {
+      color: rgba(255, 255, 255, .68);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+
     @media (max-width: 1180px) {
       .filters { grid-template-columns: 1fr 1fr; }
       .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -675,8 +724,8 @@
       </div>
 
       <div class="filter">
-        <label>Jenis Cuti</label>
-        <select id="typeFilter" onchange="render()">
+        <label>Jabatan</label>
+        <select id="jabatanFilter" onchange="render()">
           <option value="ALL">ALL</option>
         </select>
       </div>
@@ -717,7 +766,7 @@
     <section class="grid">
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">Grafik Total Pengajuan Per Bulan</div>
+          <div class="panel-title">Grafik Total Pengajuan Per Bulan / Jabatan</div>
           <div id="monthInfo" class="mini">-</div>
         </div>
         <div class="panel-body">
@@ -727,14 +776,11 @@
 
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">Komposisi Jenis Cuti</div>
-          <div id="typeInfo" class="mini">-</div>
+          <div class="panel-title">Kategori Cuti Berdasarkan Jabatan</div>
+          <div id="jabatanInfo" class="mini">Aturan kuota</div>
         </div>
         <div class="panel-body">
-          <div class="donut-wrap">
-            <div id="donut" class="donut"></div>
-            <div id="legend" class="legend"></div>
-          </div>
+          <div id="jabatanSummary" class="legend"></div>
         </div>
       </div>
     </section>
@@ -750,6 +796,7 @@
             <thead>
               <tr>
                 <th>Nama Staff</th>
+                <th>Jabatan</th>
                 <th>Jenis</th>
                 <th>Paspor</th>
                 <th>Mulai</th>
@@ -773,6 +820,7 @@
             <thead>
               <tr>
                 <th>Nama Staff</th>
+                <th>Jabatan</th>
                 <th>Jumlah Pengajuan</th>
               </tr>
             </thead>
@@ -792,6 +840,7 @@
           <thead>
             <tr>
               <th>Nama Staff</th>
+              <th>Jabatan</th>
               <th>No Paspor</th>
               <th>Jenis Cuti</th>
               <th>Ambil Paspor</th>
@@ -848,6 +897,15 @@
               </div>
 
               <div class="form-field">
+                <label>Jabatan / Kategori Cuti</label>
+                <select id="formJabatan" onchange="updatePengajuanPreview()" required>
+                  <option value="KASIR CUTI SETAHUN">KASIR CUTI SETAHUN - 25 HARI</option>
+                  <option value="KASIR">KASIR - 12 HARI + 2 HARI</option>
+                  <option value="CS">CS - 14 HARI</option>
+                </select>
+              </div>
+
+              <div class="form-field">
                 <label>Tanggal Mulai Cuti</label>
                 <input id="formStart" type="date" onchange="updatePengajuanPreview()" required>
               </div>
@@ -875,7 +933,7 @@
             </div>
 
             <div class="form-hint">
-              Catatan: hasil simpan akan mengikuti format pengajuan di atas. Dashboard tetap memakai mode TODAY, jadi data yang sudah lewat tidak masuk hitungan.
+              Catatan: hasil simpan akan mengikuti format pengajuan di atas dan kategori jabatan disimpan terpisah untuk rekap. Dashboard tetap memakai mode TODAY, jadi data yang sudah lewat tidak masuk hitungan.
             </div>
 
             <div class="form-actions">
@@ -910,6 +968,15 @@
     ];
 
     const typeColors = ['#facc15', '#a855f7', '#60a5fa', '#22c55e', '#fb7185', '#f97316'];
+
+    const jabatanRules = {
+      'KASIR CUTI SETAHUN': { kuota: 25, label: 'Kasir cuti setahun', detail: 'Kuota cuti setahun 25 hari' },
+      'KASIR': { kuota: 14, label: 'Kasir', detail: '12 hari + maksimal penambahan cuti 2 hari = 14 hari' },
+      'CS': { kuota: 14, label: 'CS', detail: 'Kuota cuti 14 hari' },
+      'BELUM DISET': { kuota: 0, label: 'Belum diset', detail: 'Data lama belum memiliki kategori jabatan' }
+    };
+
+    const jabatanOrder = ['KASIR CUTI SETAHUN', 'KASIR', 'CS', 'BELUM DISET'];
 
     document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('todayNote').textContent = 'TODAY MODE AKTIF • Patokan: ' + formatDateIndo(new Date());
@@ -1102,6 +1169,7 @@
       const situs = document.getElementById('formSitus').value.trim() || 'Linetogel';
       const nama = document.getElementById('formNama').value.trim();
       const noPaspor = document.getElementById('formPaspor').value.trim();
+      const jabatan = document.getElementById('formJabatan').value;
       const perihal = document.getElementById('formPerihal').value;
       const startDate = document.getElementById('formStart').value;
       const endDate = document.getElementById('formEnd').value;
@@ -1133,6 +1201,7 @@
         situs: situs,
         nama: nama,
         noPaspor: noPaspor,
+        jabatan: jabatan,
         perihal: perihal,
         startDate: startDate,
         endDate: endDate,
@@ -1163,6 +1232,7 @@
       const situs = (document.getElementById('formSitus')?.value || 'Linetogel').trim();
       const perihal = document.getElementById('formPerihal')?.value || 'CUTI AMBIL PASSPORT';
       const noPaspor = (document.getElementById('formPaspor')?.value || '').trim().toUpperCase();
+      const jabatan = document.getElementById('formJabatan')?.value || 'KASIR CUTI SETAHUN';
       const nama = (document.getElementById('formNama')?.value || '').trim().toUpperCase();
       const startDate = document.getElementById('formStart')?.value || '';
       const endDate = document.getElementById('formEnd')?.value || '';
@@ -1216,7 +1286,7 @@
 
     function buildFilterOptions(records) {
       const years = unique(records.map(r => r.tahun).filter(Boolean)).sort((a, b) => b - a);
-      const types = unique(records.map(r => r.jenis).filter(Boolean)).sort();
+      const jabatans = sortJabatan(unique(records.map(r => normalizeJabatan(r.jabatan)).filter(Boolean)));
 
       fillSelect('yearFilter', ['ALL', ...years]);
 
@@ -1224,7 +1294,7 @@
       fillSelect('monthFilter', ['ALL', ...monthNames], 'BULAN INI');
       document.getElementById('monthFilter').value = monthNames[new Date().getMonth()];
 
-      fillSelect('typeFilter', ['ALL', ...types]);
+      fillSelect('jabatanFilter', ['ALL', ...jabatans]);
     }
 
     function fillSelect(id, values, allLabel) {
@@ -1245,7 +1315,7 @@
       document.getElementById('yearFilter').value = 'ALL';
       document.getElementById('monthFilter').value = monthNames[new Date().getMonth()];
       document.getElementById('statusFilter').value = 'ALL';
-      document.getElementById('typeFilter').value = 'ALL';
+      document.getElementById('jabatanFilter').value = 'ALL';
       render();
     }
 
@@ -1254,14 +1324,14 @@
       const year = document.getElementById('yearFilter').value;
       const month = document.getElementById('monthFilter').value;
       const status = document.getElementById('statusFilter').value;
-      const type = document.getElementById('typeFilter').value;
+      const jabatan = document.getElementById('jabatanFilter').value;
 
       return activeData.filter(r => {
         if (search && !String(r.nama || '').toLowerCase().includes(search)) return false;
         if (year !== 'ALL' && String(r.tahun) !== String(year)) return false;
         if (month !== 'ALL' && String(r.bulan) !== String(month)) return false;
         if (status !== 'ALL' && String(r.status) !== String(status)) return false;
-        if (type !== 'ALL' && String(r.jenis) !== String(type)) return false;
+        if (jabatan !== 'ALL' && normalizeJabatan(r.jabatan) !== String(jabatan)) return false;
         return true;
       });
     }
@@ -1271,7 +1341,7 @@
 
       renderKpi(records);
       renderMonthly(activeData);
-      renderTypeDonut(records);
+      renderJabatanSummary(records);
       renderUpcoming(records);
       renderTopStaff(records);
       renderAllTable(records);
@@ -1301,75 +1371,88 @@
     }
 
     function renderMonthly(records) {
-      // Grafik per bulan tetap memakai activeData agar terlihat total pengajuan tiap bulan dari hari ini ke depan.
       const selectedYear = document.getElementById('yearFilter').value;
       const search = document.getElementById('searchInput').value.trim().toLowerCase();
       const status = document.getElementById('statusFilter').value;
-      const type = document.getElementById('typeFilter').value;
+      const selectedJabatan = document.getElementById('jabatanFilter').value;
 
       const base = records.filter(r => {
         if (search && !String(r.nama || '').toLowerCase().includes(search)) return false;
         if (selectedYear !== 'ALL' && String(r.tahun) !== String(selectedYear)) return false;
         if (status !== 'ALL' && String(r.status) !== String(status)) return false;
-        if (type !== 'ALL' && String(r.jenis) !== String(type)) return false;
+        if (selectedJabatan !== 'ALL' && normalizeJabatan(r.jabatan) !== String(selectedJabatan)) return false;
         return true;
       });
 
-      const data = monthNames.map((month, index) => {
+      const jobs = selectedJabatan === 'ALL'
+        ? sortJabatan(unique(base.map(r => normalizeJabatan(r.jabatan))))
+        : [selectedJabatan];
+
+      const matrix = monthNames.map((month, index) => {
         const rows = base.filter(r => Number(r.bulanIndex) === index);
-        return { month, count: rows.length };
+        const counts = {};
+        jobs.forEach(j => counts[j] = rows.filter(r => normalizeJabatan(r.jabatan) === j).length);
+        return { month, rows, counts, total: rows.length };
       });
 
-      const maxVal = Math.max(...data.map(x => x.count), 1);
+      const maxVal = Math.max(...matrix.flatMap(m => jobs.map(j => m.counts[j] || 0)), 1);
 
-      document.getElementById('monthlyChart').innerHTML = data.map(x => {
-        const pct = Math.round((x.count / maxVal) * 100);
+      document.getElementById('monthlyChart').innerHTML = matrix.map(item => {
+        const inner = jobs.map(j => {
+          const count = item.counts[j] || 0;
+          const pct = Math.round((count / maxVal) * 100);
+          return `
+            <div class="jabatan-row">
+              <div>${escapeHtml(getJabatanLabel(j))}</div>
+              <div class="bar"><span style="width:${pct}%"></span></div>
+              <div><b>${formatNumber(count)}</b></div>
+            </div>
+          `;
+        }).join('');
+
         return `
-          <div class="bar-row">
-            <div>${escapeHtml(x.month)}</div>
-            <div class="bar"><span style="width:${pct}%"></span></div>
-            <div><b>${formatNumber(x.count)}</b></div>
+          <div class="month-group">
+            <div class="month-title"><span>${escapeHtml(item.month)}</span><b>${formatNumber(item.total)} Pengajuan</b></div>
+            ${inner}
           </div>
         `;
       }).join('');
 
       document.getElementById('monthInfo').textContent =
-        `${formatNumber(sum(data.map(x => x.count)))} pengajuan aktif / mendatang`;
+        `${formatNumber(sum(matrix.map(x => x.total)))} pengajuan aktif / mendatang`;
     }
 
-    function renderTypeDonut(records) {
-      const grouped = groupCount(records, 'jenis');
-      const entries = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
-      const total = sum(entries.map(x => x[1]));
+    function renderJabatanSummary(records) {
+      const selectedJabatan = document.getElementById('jabatanFilter').value;
+      const jobs = selectedJabatan === 'ALL'
+        ? sortJabatan(unique(records.map(r => normalizeJabatan(r.jabatan))))
+        : [selectedJabatan];
 
-      let start = 0;
-      const parts = [];
-
-      entries.forEach(([label, value], index) => {
-        const deg = total ? (value / total) * 360 : 0;
-        const color = typeColors[index % typeColors.length];
-        parts.push(`${color} ${start}deg ${start + deg}deg`);
-        start += deg;
+      const rows = jobs.map(j => {
+        const data = records.filter(r => normalizeJabatan(r.jabatan) === j);
+        const staff = unique(data.map(r => r.nama).filter(Boolean)).length;
+        const pengajuan = data.length;
+        const hari = sum(data.map(r => Number(r.totalHari || 0)));
+        const rule = jabatanRules[j] || { kuota: 0, label: j, detail: 'Kategori khusus' };
+        const totalKuota = rule.kuota && staff ? rule.kuota * staff : rule.kuota;
+        const sisa = totalKuota ? Math.max(totalKuota - hari, 0) : 0;
+        return { jabatan: j, staff, pengajuan, hari, totalKuota, sisa, rule };
       });
 
-      document.getElementById('donut').style.background = entries.length
-        ? `conic-gradient(${parts.join(', ')})`
-        : 'rgba(255,255,255,.12)';
+      document.getElementById('jabatanSummary').innerHTML = rows.length
+        ? rows.map(r => `
+          <div class="legend-item quota-card">
+            <div class="quota-title">
+              <span>${escapeHtml(r.rule.label || r.jabatan)}</span>
+              <b>${formatNumber(r.rule.kuota)} hari / staff</b>
+            </div>
+            <div class="quota-detail">${escapeHtml(r.rule.detail || '')}</div>
+            <div class="quota-detail">Staff: <b>${formatNumber(r.staff)}</b> • Pengajuan: <b>${formatNumber(r.pengajuan)}</b> • Hari aktif/mendatang: <b>${formatNumber(r.hari)}</b>${r.totalKuota ? ' • Est. sisa kuota: <b>' + formatNumber(r.sisa) + '</b>' : ''}</div>
+          </div>
+        `).join('')
+        : '<div class="empty">Belum ada data jabatan sesuai filter.</div>';
 
-      document.getElementById('legend').innerHTML = entries.length
-        ? entries.map(([label, value], index) => {
-            const color = typeColors[index % typeColors.length];
-            const pct = total ? Math.round((value / total) * 100) : 0;
-            return `
-              <div class="legend-item">
-                <span><span class="dot" style="background:${color}"></span>${escapeHtml(label)}</span>
-                <b>${formatNumber(value)} (${pct}%)</b>
-              </div>
-            `;
-          }).join('')
-        : '<div class="empty">Belum ada data.</div>';
-
-      document.getElementById('typeInfo').textContent = `${formatNumber(total)} data`;
+      document.getElementById('jabatanInfo').textContent = `${formatNumber(rows.length)} kategori`;
     }
 
     function renderUpcoming(records) {
@@ -1384,6 +1467,7 @@
         ? rows.map(r => `
           <tr>
             <td><b>${escapeHtml(r.nama)}</b></td>
+            <td>${escapeHtml(getJabatanLabel(r.jabatan))}</td>
             <td>${escapeHtml(r.jenis)}</td>
             <td>${escapeHtml(r.ambilPaspor)}</td>
             <td>${escapeHtml(r.startDisplay)}</td>
@@ -1392,7 +1476,7 @@
             <td>${escapeHtml(r.sumber)}</td>
           </tr>
         `).join('')
-        : '<tr><td colspan="7" class="empty">Tidak ada cuti dari hari ini ke depan.</td></tr>';
+        : '<tr><td colspan="8" class="empty">Tidak ada cuti dari hari ini ke depan.</td></tr>';
     }
 
     function renderTopStaff(records) {
@@ -1400,12 +1484,13 @@
 
       records.forEach(r => {
         const name = r.nama || '-';
-        if (!map[name]) map[name] = { count: 0 };
-        map[name].count += 1;
+        const jabatan = normalizeJabatan(r.jabatan);
+        const key = name + '|' + jabatan;
+        if (!map[key]) map[key] = { name: name, jabatan: jabatan, count: 0 };
+        map[key].count += 1;
       });
 
-      const rows = Object.entries(map)
-        .map(([name, val]) => ({ name, count: val.count }))
+      const rows = Object.values(map)
         .sort((a, b) => b.count - a.count)
         .slice(0, 10);
 
@@ -1413,10 +1498,11 @@
         ? rows.map(r => `
           <tr>
             <td><b>${escapeHtml(r.name)}</b></td>
+            <td>${escapeHtml(getJabatanLabel(r.jabatan))}</td>
             <td><b>${formatNumber(r.count)}</b></td>
           </tr>
         `).join('')
-        : '<tr><td colspan="2" class="empty">Belum ada data.</td></tr>';
+        : '<tr><td colspan="3" class="empty">Belum ada data.</td></tr>';
     }
 
     function renderAllTable(records) {
@@ -1429,6 +1515,7 @@
         ? rows.map(r => `
           <tr>
             <td><b>${escapeHtml(r.nama)}</b></td>
+            <td>${escapeHtml(getJabatanLabel(r.jabatan))}</td>
             <td>${escapeHtml(r.noPaspor || '-')}</td>
             <td>${escapeHtml(r.jenis)}</td>
             <td>${escapeHtml(r.ambilPaspor)}</td>
@@ -1439,7 +1526,7 @@
             <td>${escapeHtml(r.sumber)}</td>
           </tr>
         `).join('')
-        : '<tr><td colspan="9" class="empty">Belum ada data sesuai filter dari hari ini ke depan.</td></tr>';
+        : '<tr><td colspan="10" class="empty">Belum ada data sesuai filter dari hari ini ke depan.</td></tr>';
     }
 
     function statusPill(status) {
@@ -1453,6 +1540,33 @@
 
     function setText(id, value) {
       document.getElementById(id).textContent = value;
+    }
+
+
+    function normalizeJabatan(value) {
+      const raw = String(value || '').trim().toUpperCase();
+      if (!raw) return 'BELUM DISET';
+      if (raw.includes('KASIR') && raw.includes('TAHUN')) return 'KASIR CUTI SETAHUN';
+      if (raw === 'KASIR') return 'KASIR';
+      if (raw === 'CS') return 'CS';
+      return raw;
+    }
+
+    function getJabatanLabel(value) {
+      const key = normalizeJabatan(value);
+      return jabatanRules[key] ? jabatanRules[key].label : key;
+    }
+
+    function sortJabatan(values) {
+      const arr = unique(values.map(normalizeJabatan));
+      return arr.sort((a, b) => {
+        const ia = jabatanOrder.indexOf(a);
+        const ib = jabatanOrder.indexOf(b);
+        if (ia === -1 && ib === -1) return a.localeCompare(b);
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+      });
     }
 
     function groupCount(records, key) {
