@@ -822,53 +822,60 @@
           <form id="cutiForm" onsubmit="submitCutiForm(event)">
             <div class="form-grid">
               <div class="form-field">
-                <label>Nama Staff</label>
-                <input id="formNama" type="text" placeholder="Contoh: RIZKY" required>
+                <label>Situs</label>
+                <input id="formSitus" type="text" value="Linetogel" oninput="updatePengajuanPreview()" required>
+              </div>
+
+              <div class="form-field">
+                <label>Perihal</label>
+                <select id="formPerihal" onchange="updatePengajuanPreview()" required>
+                  <option value="CUTI AMBIL PASSPORT">CUTI AMBIL PASSPORT</option>
+                  <option value="CUTI TIDAK AMBIL PASSPORT">CUTI TIDAK AMBIL PASSPORT</option>
+                  <option value="CUTI LOKAL">CUTI LOKAL</option>
+                  <option value="CUTI INDONESIA">CUTI INDONESIA</option>
+                  <option value="CUTI KERJA">CUTI KERJA</option>
+                </select>
               </div>
 
               <div class="form-field">
                 <label>No Paspor</label>
-                <input id="formPaspor" type="text" placeholder="Opsional">
+                <input id="formPaspor" type="text" placeholder="Contoh: E1473204" oninput="updatePengajuanPreview()">
               </div>
 
               <div class="form-field">
-                <label>Jenis Cuti</label>
-                <select id="formJenis" required>
-                  <option value="CUTI LOKAL">CUTI LOKAL</option>
-                  <option value="CUTI INDO">CUTI INDO</option>
-                  <option value="CUTI KERJA">CUTI KERJA</option>
-                  <option value="CUTI KERJA + LOKAL">CUTI KERJA + LOKAL</option>
-                  <option value="CUTI LAINNYA">CUTI LAINNYA</option>
-                </select>
-              </div>
-
-              <div class="form-field">
-                <label>Ambil Paspor</label>
-                <select id="formAmbilPaspor">
-                  <option value="-">-</option>
-                  <option value="AMBIL PASPOR">AMBIL PASPOR</option>
-                  <option value="TIDAK AMBIL PASPOR">TIDAK AMBIL PASPOR</option>
-                </select>
+                <label>Nama Staff</label>
+                <input id="formNama" type="text" placeholder="Contoh: PUTRA ANUGRAH RIZKI" oninput="updatePengajuanPreview()" required>
               </div>
 
               <div class="form-field">
                 <label>Tanggal Mulai Cuti</label>
-                <input id="formStart" type="date" required>
+                <input id="formStart" type="date" onchange="updatePengajuanPreview()" required>
               </div>
 
               <div class="form-field">
                 <label>Tanggal Selesai Cuti</label>
-                <input id="formEnd" type="date" required>
+                <input id="formEnd" type="date" onchange="updatePengajuanPreview()" required>
               </div>
 
               <div class="form-field full">
                 <label>Keterangan</label>
-                <textarea id="formKet" placeholder="Contoh: Izin cuti lokal / pulang indo / keterangan tambahan"></textarea>
+                <select id="formKet" onchange="updatePengajuanPreview()" required>
+                  <option value="CUTI INDONESIA">CUTI INDONESIA</option>
+                  <option value="CUTI LOKAL">CUTI LOKAL</option>
+                  <option value="CUTI KERJA">CUTI KERJA</option>
+                  <option value="CUTI KERJA + CUTI LOKAL">CUTI KERJA + CUTI LOKAL</option>
+                  <option value="CUTI LAINNYA">CUTI LAINNYA</option>
+                </select>
+              </div>
+
+              <div class="form-field full">
+                <label>Preview Format Pengajuan</label>
+                <textarea id="formatPreview" readonly></textarea>
               </div>
             </div>
 
             <div class="form-hint">
-              Catatan: Dashboard tetap memakai mode TODAY. Jika tanggal selesai cuti sudah lewat dari hari ini, data akan tersimpan tetapi tidak masuk hitungan dashboard.
+              Catatan: hasil simpan akan mengikuti format pengajuan di atas. Dashboard tetap memakai mode TODAY, jadi data yang sudah lewat tidak masuk hitungan.
             </div>
 
             <div class="form-actions">
@@ -1063,6 +1070,7 @@
 
       if (!start.value) start.value = today;
       if (!end.value) end.value = start.value || today;
+      updatePengajuanPreview();
 
       document.getElementById('cutiModal').classList.add('show');
       setTimeout(function() {
@@ -1091,13 +1099,13 @@
         return;
       }
 
+      const situs = document.getElementById('formSitus').value.trim() || 'Linetogel';
       const nama = document.getElementById('formNama').value.trim();
       const noPaspor = document.getElementById('formPaspor').value.trim();
-      const jenis = document.getElementById('formJenis').value;
-      const ambilPaspor = document.getElementById('formAmbilPaspor').value;
+      const perihal = document.getElementById('formPerihal').value;
       const startDate = document.getElementById('formStart').value;
       const endDate = document.getElementById('formEnd').value;
-      const keterangan = document.getElementById('formKet').value.trim();
+      const keterangan = document.getElementById('formKet').value;
 
       if (!nama) {
         showError('Nama staff wajib diisi.');
@@ -1122,14 +1130,13 @@
 
       jsonp(apiUrl, {
         action: 'submitCuti',
+        situs: situs,
         nama: nama,
         noPaspor: noPaspor,
-        jenis: jenis,
-        ambilPaspor: ambilPaspor,
+        perihal: perihal,
         startDate: startDate,
         endDate: endDate,
         keterangan: keterangan,
-        perihal: 'PENGAJUAN CUTI DARI DASHBOARD',
         _t: Date.now()
       }, function(payload) {
         btn.disabled = false;
@@ -1150,6 +1157,53 @@
         showError(message || 'Gagal menyimpan pengajuan.');
       });
     }
+
+
+    function updatePengajuanPreview() {
+      const situs = (document.getElementById('formSitus')?.value || 'Linetogel').trim();
+      const perihal = document.getElementById('formPerihal')?.value || 'CUTI AMBIL PASSPORT';
+      const noPaspor = (document.getElementById('formPaspor')?.value || '').trim().toUpperCase();
+      const nama = (document.getElementById('formNama')?.value || '').trim().toUpperCase();
+      const startDate = document.getElementById('formStart')?.value || '';
+      const endDate = document.getElementById('formEnd')?.value || '';
+      const keterangan = document.getElementById('formKet')?.value || 'CUTI INDONESIA';
+
+      const totalHari = countDaysInclusive(startDate, endDate);
+      const startText = startDate ? formatDateUpperFromInput(startDate) : '-';
+      const endText = endDate ? formatDateUpperFromInput(endDate) : '-';
+
+      const preview = [
+        'PENGAJUAN CUTI STAFF:',
+        'Situs: ' + situs,
+        'Perihal : ' + perihal,
+        'No Paspor: ' + (noPaspor || '-'),
+        'Nama Staff: ' + (nama || '-'),
+        'Tanggal Pengajuan: ' + startText + ' - ' + endText + ' ( ' + (totalHari || 0) + ' Hari )',
+        'Keterangan : ' + keterangan
+      ].join('\n');
+
+      const box = document.getElementById('formatPreview');
+      if (box) box.value = preview;
+    }
+
+    function countDaysInclusive(startDate, endDate) {
+      if (!startDate || !endDate) return 0;
+      const start = new Date(startDate + 'T00:00:00');
+      const end = new Date(endDate + 'T00:00:00');
+      if (end < start) return 0;
+      return Math.round((end - start) / 86400000) + 1;
+    }
+
+    function formatDateUpperFromInput(value) {
+      if (!value) return '-';
+      const date = new Date(value + 'T00:00:00');
+      return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      }).format(date).toUpperCase();
+    }
+
 
     function toDateInputValue(date) {
       const d = new Date(date);
