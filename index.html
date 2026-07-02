@@ -95,8 +95,22 @@
       margin: 10px 0 0;
       color: var(--muted);
       font-size: 14px;
-      max-width: 820px;
+      max-width: 860px;
       line-height: 1.6;
+    }
+
+    .today-note {
+      margin-top: 10px;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(34, 197, 94, .13);
+      border: 1px solid rgba(34, 197, 94, .35);
+      color: #bbf7d0;
+      font-size: 12px;
+      font-weight: 800;
     }
 
     .actions {
@@ -170,7 +184,7 @@
 
     .kpis {
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-template-columns: repeat(5, minmax(0, 1fr));
       gap: 14px;
       margin-bottom: 18px;
     }
@@ -336,7 +350,7 @@
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      min-width: 920px;
+      min-width: 880px;
     }
 
     th, td {
@@ -381,12 +395,6 @@
       background: rgba(96, 165, 250, .15);
       color: #bfdbfe;
       border: 1px solid rgba(96, 165, 250, .36);
-    }
-
-    .pill.done {
-      background: rgba(34, 197, 94, .12);
-      color: #bbf7d0;
-      border: 1px solid rgba(34, 197, 94, .28);
     }
 
     .pill.other {
@@ -488,8 +496,11 @@
           <div class="brand">✦ CUTI STAFF DASHBOARD</div>
           <h1>Dashboard Rekap Cuti Staff</h1>
           <p class="subtitle">
-            Dashboard HTML untuk GitHub Pages. Tampilan dashboard berjalan di GitHub, sedangkan data cuti dibaca dari Google Sheets melalui Apps Script API.
+            Semua perhitungan memakai patokan <b>hari ini</b>. Data cuti yang tanggal selesainya sudah lewat otomatis tidak dihitung dan tidak ditampilkan.
+            Total pengajuan dihitung berdasarkan bulan berjalan atau bulan yang dipilih di filter.
           </p>
+
+          <div id="todayNote" class="today-note">TODAY MODE AKTIF</div>
 
           <div id="loader" class="loader show">
             <span class="spin"></span>
@@ -532,7 +543,7 @@
       <div class="filter">
         <label>Bulan</label>
         <select id="monthFilter" onchange="render()">
-          <option value="ALL">ALL</option>
+          <option value="ALL">BULAN INI</option>
         </select>
       </div>
 
@@ -542,7 +553,6 @@
           <option value="ALL">ALL</option>
           <option value="SEDANG CUTI">SEDANG CUTI</option>
           <option value="AKAN CUTI">AKAN CUTI</option>
-          <option value="SELESAI">SELESAI</option>
         </select>
       </div>
 
@@ -558,19 +568,13 @@
       <div class="kpi">
         <div class="title">Total Pengajuan</div>
         <div id="kpiTotal" class="value">0</div>
-        <div class="note">Jumlah data cuti terbaca</div>
+        <div id="kpiTotalNote" class="note">Dihitung per bulan</div>
       </div>
 
       <div class="kpi">
         <div class="title">Jumlah Staff</div>
         <div id="kpiStaff" class="value">0</div>
-        <div class="note">Staff unik dalam filter</div>
-      </div>
-
-      <div class="kpi">
-        <div class="title">Total Hari Cuti</div>
-        <div id="kpiDays" class="value">0</div>
-        <div class="note">Akumulasi hari cuti</div>
+        <div class="note">Staff unik dari hari ini ke depan</div>
       </div>
 
       <div class="kpi">
@@ -595,7 +599,7 @@
     <section class="grid">
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">Grafik Rekap Per Bulan</div>
+          <div class="panel-title">Grafik Total Pengajuan Per Bulan</div>
           <div id="monthInfo" class="mini">-</div>
         </div>
         <div class="panel-body">
@@ -620,7 +624,7 @@
     <section class="grid">
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">Daftar Cuti Berjalan / Mendatang</div>
+          <div class="panel-title">Daftar Cuti Mulai Hari Ini / Mendatang</div>
           <div id="upcomingInfo" class="mini">-</div>
         </div>
         <div class="table-wrap">
@@ -632,7 +636,6 @@
                 <th>Paspor</th>
                 <th>Mulai</th>
                 <th>Selesai</th>
-                <th>Hari</th>
                 <th>Status</th>
                 <th>Sumber</th>
               </tr>
@@ -645,15 +648,14 @@
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">Staff Cuti Terbanyak</div>
-          <div id="topInfo" class="mini">Top 10</div>
+          <div id="topInfo" class="mini">Dari hari ini ke depan</div>
         </div>
         <div class="table-wrap">
-          <table style="min-width:520px">
+          <table style="min-width:460px">
             <thead>
               <tr>
                 <th>Nama Staff</th>
-                <th>Jumlah</th>
-                <th>Total Hari</th>
+                <th>Jumlah Pengajuan</th>
               </tr>
             </thead>
             <tbody id="topBody"></tbody>
@@ -664,7 +666,7 @@
 
     <section class="panel">
       <div class="panel-head">
-        <div class="panel-title">Semua Data Cuti</div>
+        <div class="panel-title">Semua Data Cuti Yang Masih Dihitung</div>
         <div id="dataInfo" class="mini">-</div>
       </div>
       <div class="table-wrap">
@@ -677,7 +679,6 @@
               <th>Ambil Paspor</th>
               <th>Mulai</th>
               <th>Selesai</th>
-              <th>Total Hari</th>
               <th>Status</th>
               <th>Keterangan</th>
               <th>Sumber</th>
@@ -702,6 +703,7 @@
     const DEFAULT_API_URL = '';
 
     let rawData = [];
+    let activeData = [];
     let meta = null;
 
     const monthNames = [
@@ -712,6 +714,7 @@
     const typeColors = ['#facc15', '#a855f7', '#60a5fa', '#22c55e', '#fb7185', '#f97316'];
 
     document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('todayNote').textContent = 'TODAY MODE AKTIF • Patokan: ' + formatDateIndo(new Date());
       const savedApi = getApiUrl();
       if (!savedApi) {
         showSetup();
@@ -774,11 +777,16 @@
         meta = payload || {};
         rawData = Array.isArray(meta.records) ? meta.records : [];
 
-        buildFilterOptions(rawData);
+        // MODE TODAY:
+        // Semua data yang tanggal selesai cutinya sudah lewat hari ini tidak dihitung.
+        activeData = rawData.filter(r => Number(r.endMs || 0) >= startOfTodayMs());
+
+        buildFilterOptions(activeData);
         render();
 
+        const removedCount = Math.max(0, rawData.length - activeData.length);
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • Data terbaca: ${rawData.length} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • Data dihitung: ${activeData.length} • Data lewat tidak dihitung: ${removedCount} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
@@ -844,21 +852,31 @@
       const types = unique(records.map(r => r.jenis).filter(Boolean)).sort();
 
       fillSelect('yearFilter', ['ALL', ...years]);
-      fillSelect('monthFilter', ['ALL', ...monthNames]);
+
+      // Default bulan dibuat BULAN INI agar Total Pengajuan langsung per bulan berjalan.
+      fillSelect('monthFilter', ['ALL', ...monthNames], 'BULAN INI');
+      document.getElementById('monthFilter').value = monthNames[new Date().getMonth()];
+
       fillSelect('typeFilter', ['ALL', ...types]);
     }
 
-    function fillSelect(id, values) {
+    function fillSelect(id, values, allLabel) {
       const select = document.getElementById(id);
       const current = select.value || 'ALL';
-      select.innerHTML = values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
-      if (values.map(String).includes(String(current))) select.value = current;
+      select.innerHTML = values.map(v => {
+        const label = v === 'ALL' && allLabel ? allLabel : v;
+        return `<option value="${escapeHtml(v)}">${escapeHtml(label)}</option>`;
+      }).join('');
+
+      if (values.map(String).includes(String(current))) {
+        select.value = current;
+      }
     }
 
     function resetFilter() {
       document.getElementById('searchInput').value = '';
       document.getElementById('yearFilter').value = 'ALL';
-      document.getElementById('monthFilter').value = 'ALL';
+      document.getElementById('monthFilter').value = monthNames[new Date().getMonth()];
       document.getElementById('statusFilter').value = 'ALL';
       document.getElementById('typeFilter').value = 'ALL';
       render();
@@ -871,7 +889,7 @@
       const status = document.getElementById('statusFilter').value;
       const type = document.getElementById('typeFilter').value;
 
-      return rawData.filter(r => {
+      return activeData.filter(r => {
         if (search && !String(r.nama || '').toLowerCase().includes(search)) return false;
         if (year !== 'ALL' && String(r.tahun) !== String(year)) return false;
         if (month !== 'ALL' && String(r.bulan) !== String(month)) return false;
@@ -885,38 +903,54 @@
       const records = getFiltered();
 
       renderKpi(records);
-      renderMonthly(records);
+      renderMonthly(activeData);
       renderTypeDonut(records);
       renderUpcoming(records);
       renderTopStaff(records);
       renderAllTable(records);
 
-      document.getElementById('dataInfo').textContent = `${records.length} dari ${rawData.length} data`;
+      const monthValue = document.getElementById('monthFilter').value;
+      const monthText = monthValue === 'ALL' ? 'semua bulan dari hari ini ke depan' : monthValue;
+      document.getElementById('dataInfo').textContent = `${records.length} data • ${monthText}`;
     }
 
     function renderKpi(records) {
       const staffCount = unique(records.map(r => r.nama).filter(Boolean)).length;
-      const totalDays = sum(records.map(r => Number(r.totalHari || 0)));
       const running = records.filter(r => r.status === 'SEDANG CUTI').length;
       const future = records.filter(r => r.status === 'AKAN CUTI').length;
       const passport = records.filter(r => r.ambilPaspor === 'AMBIL PASPOR').length;
 
+      const monthValue = document.getElementById('monthFilter').value;
+      const totalNote = monthValue === 'ALL'
+        ? 'Semua bulan, hanya dari hari ini ke depan'
+        : 'Total pengajuan bulan ' + monthValue + ', dari hari ini ke depan';
+
       setText('kpiTotal', formatNumber(records.length));
+      setText('kpiTotalNote', totalNote);
       setText('kpiStaff', formatNumber(staffCount));
-      setText('kpiDays', formatNumber(totalDays));
       setText('kpiRunning', formatNumber(running));
       setText('kpiFuture', formatNumber(future));
       setText('kpiPassport', formatNumber(passport));
     }
 
     function renderMonthly(records) {
+      // Grafik per bulan tetap memakai activeData agar terlihat total pengajuan tiap bulan dari hari ini ke depan.
+      const selectedYear = document.getElementById('yearFilter').value;
+      const search = document.getElementById('searchInput').value.trim().toLowerCase();
+      const status = document.getElementById('statusFilter').value;
+      const type = document.getElementById('typeFilter').value;
+
+      const base = records.filter(r => {
+        if (search && !String(r.nama || '').toLowerCase().includes(search)) return false;
+        if (selectedYear !== 'ALL' && String(r.tahun) !== String(selectedYear)) return false;
+        if (status !== 'ALL' && String(r.status) !== String(status)) return false;
+        if (type !== 'ALL' && String(r.jenis) !== String(type)) return false;
+        return true;
+      });
+
       const data = monthNames.map((month, index) => {
-        const rows = records.filter(r => Number(r.bulanIndex) === index);
-        return {
-          month,
-          count: rows.length,
-          days: sum(rows.map(r => Number(r.totalHari || 0)))
-        };
+        const rows = base.filter(r => Number(r.bulanIndex) === index);
+        return { month, count: rows.length };
       });
 
       const maxVal = Math.max(...data.map(x => x.count), 1);
@@ -933,7 +967,7 @@
       }).join('');
 
       document.getElementById('monthInfo').textContent =
-        `${formatNumber(sum(data.map(x => x.count)))} pengajuan`;
+        `${formatNumber(sum(data.map(x => x.count)))} pengajuan aktif / mendatang`;
     }
 
     function renderTypeDonut(records) {
@@ -972,9 +1006,8 @@
     }
 
     function renderUpcoming(records) {
-      const today = startOfTodayMs();
       const rows = records
-        .filter(r => Number(r.endMs || 0) >= today)
+        .slice()
         .sort((a, b) => Number(a.startMs || 0) - Number(b.startMs || 0))
         .slice(0, 80);
 
@@ -988,12 +1021,11 @@
             <td>${escapeHtml(r.ambilPaspor)}</td>
             <td>${escapeHtml(r.startDisplay)}</td>
             <td>${escapeHtml(r.endDisplay)}</td>
-            <td><b>${formatNumber(r.totalHari)}</b></td>
             <td>${statusPill(r.status)}</td>
             <td>${escapeHtml(r.sumber)}</td>
           </tr>
         `).join('')
-        : '<tr><td colspan="8" class="empty">Tidak ada cuti berjalan / mendatang.</td></tr>';
+        : '<tr><td colspan="7" class="empty">Tidak ada cuti dari hari ini ke depan.</td></tr>';
     }
 
     function renderTopStaff(records) {
@@ -1001,31 +1033,29 @@
 
       records.forEach(r => {
         const name = r.nama || '-';
-        if (!map[name]) map[name] = { count: 0, days: 0 };
+        if (!map[name]) map[name] = { count: 0 };
         map[name].count += 1;
-        map[name].days += Number(r.totalHari || 0);
       });
 
       const rows = Object.entries(map)
-        .map(([name, val]) => ({ name, count: val.count, days: val.days }))
-        .sort((a, b) => b.days - a.days || b.count - a.count)
+        .map(([name, val]) => ({ name, count: val.count }))
+        .sort((a, b) => b.count - a.count)
         .slice(0, 10);
 
       document.getElementById('topBody').innerHTML = rows.length
         ? rows.map(r => `
           <tr>
             <td><b>${escapeHtml(r.name)}</b></td>
-            <td>${formatNumber(r.count)}</td>
-            <td><b>${formatNumber(r.days)}</b></td>
+            <td><b>${formatNumber(r.count)}</b></td>
           </tr>
         `).join('')
-        : '<tr><td colspan="3" class="empty">Belum ada data.</td></tr>';
+        : '<tr><td colspan="2" class="empty">Belum ada data.</td></tr>';
     }
 
     function renderAllTable(records) {
       const rows = records
         .slice()
-        .sort((a, b) => Number(b.startMs || 0) - Number(a.startMs || 0))
+        .sort((a, b) => Number(a.startMs || 0) - Number(b.startMs || 0))
         .slice(0, 500);
 
       document.getElementById('allBody').innerHTML = rows.length
@@ -1037,13 +1067,12 @@
             <td>${escapeHtml(r.ambilPaspor)}</td>
             <td>${escapeHtml(r.startDisplay)}</td>
             <td>${escapeHtml(r.endDisplay)}</td>
-            <td><b>${formatNumber(r.totalHari)}</b></td>
             <td>${statusPill(r.status)}</td>
             <td>${escapeHtml(r.keterangan || '-')}</td>
             <td>${escapeHtml(r.sumber)}</td>
           </tr>
         `).join('')
-        : '<tr><td colspan="10" class="empty">Belum ada data sesuai filter.</td></tr>';
+        : '<tr><td colspan="9" class="empty">Belum ada data sesuai filter dari hari ini ke depan.</td></tr>';
     }
 
     function statusPill(status) {
@@ -1051,7 +1080,6 @@
       let cls = 'other';
       if (s === 'SEDANG CUTI') cls = 'running';
       else if (s === 'AKAN CUTI') cls = 'future';
-      else if (s === 'SELESAI') cls = 'done';
 
       return `<span class="pill ${cls}">${escapeHtml(s)}</span>`;
     }
@@ -1093,6 +1121,14 @@
       const d = new Date();
       d.setHours(0, 0, 0, 0);
       return d.getTime();
+    }
+
+    function formatDateIndo(date) {
+      return new Intl.DateTimeFormat('id-ID', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      }).format(date);
     }
   </script>
 </body>
