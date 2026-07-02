@@ -471,6 +471,121 @@
       padding: 18px 0 4px;
     }
 
+
+    .success-box {
+      display: none;
+      border: 1px solid rgba(34, 197, 94, .45);
+      background: rgba(34, 197, 94, .12);
+      color: #bbf7d0;
+      border-radius: 16px;
+      padding: 14px;
+      margin-top: 14px;
+      line-height: 1.55;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(3, 1, 12, .72);
+      backdrop-filter: blur(10px);
+      z-index: 999;
+    }
+
+    .modal-backdrop.show {
+      display: flex;
+    }
+
+    .modal {
+      width: min(760px, 100%);
+      max-height: 92vh;
+      overflow: auto;
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at top left, rgba(250, 204, 21, .14), transparent 32%),
+        linear-gradient(135deg, #1b0b3d, #11051f);
+      box-shadow: 0 28px 80px rgba(0, 0, 0, .48);
+    }
+
+    .modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      padding: 20px 22px;
+      border-bottom: 1px solid rgba(255, 255, 255, .14);
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--gold);
+    }
+
+    .modal-close {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      padding: 0;
+      color: #fff;
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid rgba(255, 255, 255, .16);
+      box-shadow: none;
+    }
+
+    .modal-body {
+      padding: 20px 22px 22px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .form-field {
+      background: rgba(255, 255, 255, .075);
+      border: 1px solid rgba(255, 255, 255, .13);
+      border-radius: 18px;
+      padding: 12px;
+    }
+
+    .form-field.full {
+      grid-column: 1 / -1;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 86px;
+      resize: vertical;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 12px;
+      padding: 11px 12px;
+      color: #fff;
+      background: rgba(0, 0, 0, .22);
+      outline: none;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .form-hint {
+      color: rgba(255, 255, 255, .68);
+      font-size: 12px;
+      line-height: 1.55;
+      margin-top: 12px;
+    }
+
     @media (max-width: 1180px) {
       .filters { grid-template-columns: 1fr 1fr; }
       .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -484,6 +599,7 @@
       .kpis { grid-template-columns: 1fr 1fr; }
       .donut-wrap { grid-template-columns: 1fr; }
       .setup-row { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -517,10 +633,12 @@
           </div>
 
           <div id="errorBox" class="error-box"></div>
+          <div id="successBox" class="success-box"></div>
         </div>
 
         <div class="actions">
-          <button onclick="loadData()">Refresh Data</button>
+          <button onclick="openCutiForm()">+ Pengajuan Cuti</button>
+          <button class="btn-secondary" onclick="loadData()">Refresh Data</button>
           <button class="btn-secondary" onclick="resetFilter()">Reset Filter</button>
           <button class="btn-secondary" onclick="changeApiUrl()">Ganti API URL</button>
         </div>
@@ -689,6 +807,79 @@
       </div>
     </section>
 
+
+    <div id="cutiModal" class="modal-backdrop" onclick="modalBackdropClick(event)">
+      <div class="modal">
+        <div class="modal-head">
+          <div>
+            <div class="modal-title">Form Pengajuan Cuti</div>
+            <div class="mini">Data tersimpan ke sheet FORM_PENGAJUAN_CUTI dan langsung ikut rekap.</div>
+          </div>
+          <button class="modal-close" onclick="closeCutiForm()" type="button">×</button>
+        </div>
+
+        <div class="modal-body">
+          <form id="cutiForm" onsubmit="submitCutiForm(event)">
+            <div class="form-grid">
+              <div class="form-field">
+                <label>Nama Staff</label>
+                <input id="formNama" type="text" placeholder="Contoh: RIZKY" required>
+              </div>
+
+              <div class="form-field">
+                <label>No Paspor</label>
+                <input id="formPaspor" type="text" placeholder="Opsional">
+              </div>
+
+              <div class="form-field">
+                <label>Jenis Cuti</label>
+                <select id="formJenis" required>
+                  <option value="CUTI LOKAL">CUTI LOKAL</option>
+                  <option value="CUTI INDO">CUTI INDO</option>
+                  <option value="CUTI KERJA">CUTI KERJA</option>
+                  <option value="CUTI KERJA + LOKAL">CUTI KERJA + LOKAL</option>
+                  <option value="CUTI LAINNYA">CUTI LAINNYA</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label>Ambil Paspor</label>
+                <select id="formAmbilPaspor">
+                  <option value="-">-</option>
+                  <option value="AMBIL PASPOR">AMBIL PASPOR</option>
+                  <option value="TIDAK AMBIL PASPOR">TIDAK AMBIL PASPOR</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label>Tanggal Mulai Cuti</label>
+                <input id="formStart" type="date" required>
+              </div>
+
+              <div class="form-field">
+                <label>Tanggal Selesai Cuti</label>
+                <input id="formEnd" type="date" required>
+              </div>
+
+              <div class="form-field full">
+                <label>Keterangan</label>
+                <textarea id="formKet" placeholder="Contoh: Izin cuti lokal / pulang indo / keterangan tambahan"></textarea>
+              </div>
+            </div>
+
+            <div class="form-hint">
+              Catatan: Dashboard tetap memakai mode TODAY. Jika tanggal selesai cuti sudah lewat dari hari ini, data akan tersimpan tetapi tidak masuk hitungan dashboard.
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-secondary" onclick="closeCutiForm()" type="button">Batal</button>
+              <button id="submitCutiBtn" type="submit">Simpan Pengajuan</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
     <div id="footer" class="footer">Dashboard Cuti Staff</div>
   </div>
 
@@ -846,6 +1037,128 @@
       box.textContent = '';
       box.style.display = 'none';
     }
+
+    function showSuccess(message) {
+      const box = document.getElementById('successBox');
+      box.textContent = message;
+      box.style.display = 'block';
+      setTimeout(function() {
+        box.style.display = 'none';
+      }, 5000);
+    }
+
+    function hideSuccess() {
+      const box = document.getElementById('successBox');
+      box.textContent = '';
+      box.style.display = 'none';
+    }
+
+    function openCutiForm() {
+      hideError();
+      hideSuccess();
+
+      const today = toDateInputValue(new Date());
+      const start = document.getElementById('formStart');
+      const end = document.getElementById('formEnd');
+
+      if (!start.value) start.value = today;
+      if (!end.value) end.value = start.value || today;
+
+      document.getElementById('cutiModal').classList.add('show');
+      setTimeout(function() {
+        document.getElementById('formNama').focus();
+      }, 80);
+    }
+
+    function closeCutiForm() {
+      document.getElementById('cutiModal').classList.remove('show');
+    }
+
+    function modalBackdropClick(event) {
+      if (event.target && event.target.id === 'cutiModal') {
+        closeCutiForm();
+      }
+    }
+
+    function submitCutiForm(event) {
+      event.preventDefault();
+
+      const apiUrl = getApiUrl();
+      if (!apiUrl) {
+        closeCutiForm();
+        showSetup();
+        showError('URL API Apps Script belum diisi. Isi dulu URL Web App agar form bisa menyimpan data.');
+        return;
+      }
+
+      const nama = document.getElementById('formNama').value.trim();
+      const noPaspor = document.getElementById('formPaspor').value.trim();
+      const jenis = document.getElementById('formJenis').value;
+      const ambilPaspor = document.getElementById('formAmbilPaspor').value;
+      const startDate = document.getElementById('formStart').value;
+      const endDate = document.getElementById('formEnd').value;
+      const keterangan = document.getElementById('formKet').value.trim();
+
+      if (!nama) {
+        showError('Nama staff wajib diisi.');
+        return;
+      }
+
+      if (!startDate || !endDate) {
+        showError('Tanggal mulai dan tanggal selesai wajib diisi.');
+        return;
+      }
+
+      if (new Date(endDate + 'T00:00:00') < new Date(startDate + 'T00:00:00')) {
+        showError('Tanggal selesai tidak boleh lebih awal dari tanggal mulai.');
+        return;
+      }
+
+      const btn = document.getElementById('submitCutiBtn');
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan...';
+      hideError();
+      hideSuccess();
+
+      jsonp(apiUrl, {
+        action: 'submitCuti',
+        nama: nama,
+        noPaspor: noPaspor,
+        jenis: jenis,
+        ambilPaspor: ambilPaspor,
+        startDate: startDate,
+        endDate: endDate,
+        keterangan: keterangan,
+        perihal: 'PENGAJUAN CUTI DARI DASHBOARD',
+        _t: Date.now()
+      }, function(payload) {
+        btn.disabled = false;
+        btn.textContent = 'Simpan Pengajuan';
+
+        if (!payload || payload.ok === false) {
+          showError('Gagal menyimpan pengajuan. Detail: ' + (payload && payload.error ? payload.error : 'Payload kosong.'));
+          return;
+        }
+
+        document.getElementById('cutiForm').reset();
+        closeCutiForm();
+        showSuccess('Pengajuan cuti berhasil disimpan untuk ' + nama.toUpperCase() + '. Data dashboard sedang diperbarui.');
+        loadData();
+      }, function(message) {
+        btn.disabled = false;
+        btn.textContent = 'Simpan Pengajuan';
+        showError(message || 'Gagal menyimpan pengajuan.');
+      });
+    }
+
+    function toDateInputValue(date) {
+      const d = new Date(date);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + day;
+    }
+
 
     function buildFilterOptions(records) {
       const years = unique(records.map(r => r.tahun).filter(Boolean)).sort((a, b) => b - a);
