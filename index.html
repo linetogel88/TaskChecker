@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Dashboard Rekap Cuti Staff</title>
+
+  <style>
+    :root {
+      --bg: #0f0525;
+      --bg2: #1b0b3d;
+      --card: rgba(255, 255, 255, .095);
+      --line: rgba(255, 255, 255, .16);
+      --text: #ffffff;
+      --muted: #d8cfff;
+      --gold: #facc15;
+      --green: #22c55e;
+      --red: #fb7185;
+      --blue: #60a5fa;
+      --purple: #a855f7;
+      --shadow: 0 20px 60px rgba(0, 0, 0, .35);
+      --radius: 22px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(168, 85, 247, .38), transparent 34%),
+        radial-gradient(circle at top right, rgba(250, 204, 21, .15), transparent 28%),
+        linear-gradient(135deg, #09011d 0%, #1d0b43 48%, #11051f 100%);
+      min-height: 100vh;
+      padding: 22px;
+    }
+
+    .app { max-width: 1480px; margin: 0 auto; }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(124, 58, 237, .42), rgba(59, 7, 100, .56));
+      border-radius: 30px;
+      padding: 26px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero:before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      background:
+        radial-gradient(circle at 18% 10%, rgba(250, 204, 21, .22), transparent 18%),
+        radial-gradient(circle at 85% 15%, rgba(168, 85, 247, .33), transparent 23%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px;
+      border: 1px solid rgba(250, 204, 21, .38);
+      border-radius: 999px;
+      color: var(--gold);
+      background: rgba(0, 0, 0, .2);
+      font-weight: 800;
+      letter-spacing: .6px;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 44px);
+      line-height: 1.1;
+      letter-spacing: -1px;
+    }
+
+    .subtitle {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 820px;
+      line-height: 1.6;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    button {
+      border: 0;
+      outline: 0;
+      cursor: pointer;
+      border-radius: 14px;
+      padding: 12px 16px;
+      color: #160523;
+      font-weight: 800;
+      background: linear-gradient(135deg, #facc15, #f97316);
+      box-shadow: 0 12px 28px rgba(250, 204, 21, .2);
+      transition: transform .18s ease, filter .18s ease;
+    }
+
+    button:hover { transform: translateY(-1px); filter: brightness(1.04); }
+
+    .btn-secondary {
+      color: #fff;
+      background: rgba(255, 255, 255, .12);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: 1fr 170px 180px 180px 180px;
+      gap: 12px;
+      margin: 18px 0;
+    }
+
+    .filter {
+      background: rgba(255, 255, 255, .09);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 12px;
+      min-width: 0;
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      margin-bottom: 7px;
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 12px;
+      padding: 11px 12px;
+      color: #fff;
+      background: rgba(0, 0, 0, .22);
+      outline: none;
+    }
+
+    select option {
+      color: #111827;
+      background: #fff;
+    }
+
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .kpi {
+      position: relative;
+      overflow: hidden;
+      min-height: 126px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .055));
+      box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
+    }
+
+    .kpi:after {
+      content: "";
+      position: absolute;
+      right: -34px;
+      bottom: -40px;
+      width: 110px;
+      height: 110px;
+      background: rgba(250, 204, 21, .12);
+      border-radius: 50%;
+    }
+
+    .kpi .title {
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
+    .kpi .value {
+      font-size: 34px;
+      font-weight: 900;
+      color: var(--gold);
+      margin-top: 12px;
+      letter-spacing: -1px;
+    }
+
+    .kpi .note {
+      color: rgba(255, 255, 255, .72);
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.25fr .85fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .085);
+      box-shadow: 0 18px 40px rgba(0, 0, 0, .18);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, .05);
+    }
+
+    .panel-title {
+      font-weight: 900;
+      font-size: 15px;
+      letter-spacing: .2px;
+    }
+
+    .panel-body { padding: 16px; }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 105px 1fr 54px;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      color: rgba(255, 255, 255, .88);
+      font-size: 13px;
+    }
+
+    .bar {
+      height: 12px;
+      background: rgba(255, 255, 255, .12);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar span {
+      display: block;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #a855f7, #facc15);
+      min-width: 4px;
+    }
+
+    .donut-wrap {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .donut {
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: conic-gradient(#facc15 0deg, #a855f7 0deg, #60a5fa 0deg, #22c55e 0deg, #fb7185 0deg);
+      position: relative;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+    }
+
+    .donut:after {
+      content: "";
+      position: absolute;
+      inset: 38px;
+      background: #1b0b3d;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+    }
+
+    .legend {
+      display: grid;
+      gap: 10px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      background: rgba(0, 0, 0, .18);
+      border: 1px solid rgba(255, 255, 255, .10);
+      border-radius: 14px;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 99px;
+      display: inline-block;
+      margin-right: 8px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 560px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 920px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, .09);
+      font-size: 13px;
+      vertical-align: top;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: #271052;
+      color: var(--gold);
+      z-index: 5;
+      text-transform: uppercase;
+      letter-spacing: .35px;
+      font-size: 11px;
+    }
+
+    tr:hover td { background: rgba(255, 255, 255, .055); }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .pill.running {
+      background: rgba(250, 204, 21, .17);
+      color: #fde68a;
+      border: 1px solid rgba(250, 204, 21, .4);
+    }
+
+    .pill.future {
+      background: rgba(96, 165, 250, .15);
+      color: #bfdbfe;
+      border: 1px solid rgba(96, 165, 250, .36);
+    }
+
+    .pill.done {
+      background: rgba(34, 197, 94, .12);
+      color: #bbf7d0;
+      border: 1px solid rgba(34, 197, 94, .28);
+    }
+
+    .pill.other {
+      background: rgba(255, 255, 255, .11);
+      color: #e9d5ff;
+      border: 1px solid rgba(255, 255, 255, .16);
+    }
+
+    .loader {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-top: 12px;
+    }
+
+    .loader.show { display: flex; }
+
+    .spin {
+      width: 16px;
+      height: 16px;
+      border: 3px solid rgba(255, 255, 255, .22);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .empty {
+      color: rgba(255, 255, 255, .72);
+      text-align: center;
+      padding: 24px;
+    }
+
+    .mini {
+      color: rgba(255, 255, 255, .66);
+      font-size: 12px;
+    }
+
+    .error-box,
+    .setup-box {
+      display: none;
+      border-radius: 16px;
+      padding: 14px;
+      margin-top: 14px;
+      line-height: 1.55;
+    }
+
+    .error-box {
+      border: 1px solid rgba(251, 113, 133, .45);
+      background: rgba(251, 113, 133, .12);
+      color: #fecdd3;
+    }
+
+    .setup-box {
+      border: 1px solid rgba(250, 204, 21, .40);
+      background: rgba(250, 204, 21, .11);
+      color: #fef3c7;
+    }
+
+    .setup-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .footer {
+      color: rgba(255, 255, 255, .55);
+      font-size: 12px;
+      text-align: center;
+      padding: 18px 0 4px;
+    }
+
+    @media (max-width: 1180px) {
+      .filters { grid-template-columns: 1fr 1fr; }
+      .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 680px) {
+      body { padding: 12px; }
+      .hero { padding: 20px; }
+      .filters { grid-template-columns: 1fr; }
+      .kpis { grid-template-columns: 1fr 1fr; }
+      .donut-wrap { grid-template-columns: 1fr; }
+      .setup-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+    <section class="hero">
+      <div class="hero-content">
+        <div>
+          <div class="brand">✦ CUTI STAFF DASHBOARD</div>
+          <h1>Dashboard Rekap Cuti Staff</h1>
+          <p class="subtitle">
+            Dashboard HTML untuk GitHub Pages. Tampilan dashboard berjalan di GitHub, sedangkan data cuti dibaca dari Google Sheets melalui Apps Script API.
+          </p>
+
+          <div id="loader" class="loader show">
+            <span class="spin"></span>
+            <span>Mengambil data dari Google Sheets...</span>
+          </div>
+
+          <div id="setupBox" class="setup-box">
+            <b>Masukkan URL Web App Apps Script</b><br>
+            Paste URL hasil Deploy Apps Script agar dashboard GitHub bisa membaca data.
+            <div class="setup-row">
+              <input id="apiInput" type="text" placeholder="https://script.google.com/macros/s/AKfycb.../exec">
+              <button onclick="saveApiUrl()">Simpan URL</button>
+            </div>
+          </div>
+
+          <div id="errorBox" class="error-box"></div>
+        </div>
+
+        <div class="actions">
+          <button onclick="loadData()">Refresh Data</button>
+          <button class="btn-secondary" onclick="resetFilter()">Reset Filter</button>
+          <button class="btn-secondary" onclick="changeApiUrl()">Ganti API URL</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="filters">
+      <div class="filter">
+        <label>Cari Nama Staff</label>
+        <input id="searchInput" type="text" placeholder="Ketik nama staff..." oninput="render()">
+      </div>
+
+      <div class="filter">
+        <label>Tahun</label>
+        <select id="yearFilter" onchange="render()">
+          <option value="ALL">ALL</option>
+        </select>
+      </div>
+
+      <div class="filter">
+        <label>Bulan</label>
+        <select id="monthFilter" onchange="render()">
+          <option value="ALL">ALL</option>
+        </select>
+      </div>
+
+      <div class="filter">
+        <label>Status</label>
+        <select id="statusFilter" onchange="render()">
+          <option value="ALL">ALL</option>
+          <option value="SEDANG CUTI">SEDANG CUTI</option>
+          <option value="AKAN CUTI">AKAN CUTI</option>
+          <option value="SELESAI">SELESAI</option>
+        </select>
+      </div>
+
+      <div class="filter">
+        <label>Jenis Cuti</label>
+        <select id="typeFilter" onchange="render()">
+          <option value="ALL">ALL</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="kpis">
+      <div class="kpi">
+        <div class="title">Total Pengajuan</div>
+        <div id="kpiTotal" class="value">0</div>
+        <div class="note">Jumlah data cuti terbaca</div>
+      </div>
+
+      <div class="kpi">
+        <div class="title">Jumlah Staff</div>
+        <div id="kpiStaff" class="value">0</div>
+        <div class="note">Staff unik dalam filter</div>
+      </div>
+
+      <div class="kpi">
+        <div class="title">Total Hari Cuti</div>
+        <div id="kpiDays" class="value">0</div>
+        <div class="note">Akumulasi hari cuti</div>
+      </div>
+
+      <div class="kpi">
+        <div class="title">Sedang Cuti</div>
+        <div id="kpiRunning" class="value">0</div>
+        <div class="note">Berjalan hari ini</div>
+      </div>
+
+      <div class="kpi">
+        <div class="title">Akan Cuti</div>
+        <div id="kpiFuture" class="value">0</div>
+        <div class="note">Jadwal mendatang</div>
+      </div>
+
+      <div class="kpi">
+        <div class="title">Ambil Paspor</div>
+        <div id="kpiPassport" class="value">0</div>
+        <div class="note">Pengajuan ambil paspor</div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Grafik Rekap Per Bulan</div>
+          <div id="monthInfo" class="mini">-</div>
+        </div>
+        <div class="panel-body">
+          <div id="monthlyChart"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Komposisi Jenis Cuti</div>
+          <div id="typeInfo" class="mini">-</div>
+        </div>
+        <div class="panel-body">
+          <div class="donut-wrap">
+            <div id="donut" class="donut"></div>
+            <div id="legend" class="legend"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Daftar Cuti Berjalan / Mendatang</div>
+          <div id="upcomingInfo" class="mini">-</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nama Staff</th>
+                <th>Jenis</th>
+                <th>Paspor</th>
+                <th>Mulai</th>
+                <th>Selesai</th>
+                <th>Hari</th>
+                <th>Status</th>
+                <th>Sumber</th>
+              </tr>
+            </thead>
+            <tbody id="upcomingBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Staff Cuti Terbanyak</div>
+          <div id="topInfo" class="mini">Top 10</div>
+        </div>
+        <div class="table-wrap">
+          <table style="min-width:520px">
+            <thead>
+              <tr>
+                <th>Nama Staff</th>
+                <th>Jumlah</th>
+                <th>Total Hari</th>
+              </tr>
+            </thead>
+            <tbody id="topBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Semua Data Cuti</div>
+        <div id="dataInfo" class="mini">-</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Nama Staff</th>
+              <th>No Paspor</th>
+              <th>Jenis Cuti</th>
+              <th>Ambil Paspor</th>
+              <th>Mulai</th>
+              <th>Selesai</th>
+              <th>Total Hari</th>
+              <th>Status</th>
+              <th>Keterangan</th>
+              <th>Sumber</th>
+            </tr>
+          </thead>
+          <tbody id="allBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div id="footer" class="footer">Dashboard Cuti Staff</div>
+  </div>
+
+  <script>
+    // ============================================================
+    // SETTING UTAMA
+    // Setelah deploy Apps Script, tempel URL Web App di sini.
+    // Contoh:
+    // const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxxxx/exec';
+    // Kalau dikosongkan, dashboard akan meminta URL saat pertama dibuka.
+    // ============================================================
+    const DEFAULT_API_URL = '';
+
+    let rawData = [];
+    let meta = null;
+
+    const monthNames = [
+      'Januari','Februari','Maret','April','Mei','Juni',
+      'Juli','Agustus','September','Oktober','November','Desember'
+    ];
+
+    const typeColors = ['#facc15', '#a855f7', '#60a5fa', '#22c55e', '#fb7185', '#f97316'];
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const savedApi = getApiUrl();
+      if (!savedApi) {
+        showSetup();
+        showLoader(false);
+      } else {
+        loadData();
+      }
+    });
+
+    function getApiUrl() {
+      return DEFAULT_API_URL || localStorage.getItem('CUTI_DASHBOARD_API_URL') || '';
+    }
+
+    function saveApiUrl() {
+      const url = document.getElementById('apiInput').value.trim();
+      if (!url || !/^https:\/\/script\.google\.com\/macros\/s\//.test(url)) {
+        showError('URL tidak valid. Pastikan memakai URL Web App Apps Script yang diawali https://script.google.com/macros/s/');
+        return;
+      }
+
+      localStorage.setItem('CUTI_DASHBOARD_API_URL', url);
+      hideSetup();
+      loadData();
+    }
+
+    function changeApiUrl() {
+      document.getElementById('apiInput').value = getApiUrl();
+      showSetup();
+    }
+
+    function showSetup() {
+      document.getElementById('setupBox').style.display = 'block';
+    }
+
+    function hideSetup() {
+      document.getElementById('setupBox').style.display = 'none';
+    }
+
+    function loadData() {
+      const apiUrl = getApiUrl();
+      if (!apiUrl) {
+        showSetup();
+        showLoader(false);
+        return;
+      }
+
+      showLoader(true);
+      hideError();
+
+      jsonp(apiUrl, {
+        action: 'data',
+        _t: Date.now()
+      }, function(payload) {
+        if (!payload || payload.ok === false) {
+          showLoader(false);
+          showError('Gagal membaca data dari API. Detail: ' + (payload && payload.error ? payload.error : 'Payload kosong.'));
+          return;
+        }
+
+        meta = payload || {};
+        rawData = Array.isArray(meta.records) ? meta.records : [];
+
+        buildFilterOptions(rawData);
+        render();
+
+        document.getElementById('footer').textContent =
+          `Update: ${meta.generatedAt || '-'} • Data terbaca: ${rawData.length} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+
+        showLoader(false);
+        hideSetup();
+      }, function(message) {
+        showLoader(false);
+        showError(message || 'Gagal menghubungi API Apps Script.');
+      });
+    }
+
+    function jsonp(url, params, onSuccess, onError) {
+      const callbackName = '__cutiDashboardCallback_' + Date.now() + '_' + Math.floor(Math.random() * 100000);
+      const script = document.createElement('script');
+      const timeout = setTimeout(function() {
+        cleanup();
+        onError('Timeout membaca data. Coba cek URL Apps Script atau akses deploy Web App.');
+      }, 30000);
+
+      params = params || {};
+      params.callback = callbackName;
+
+      const query = Object.keys(params)
+        .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
+        .join('&');
+
+      window[callbackName] = function(data) {
+        cleanup();
+        onSuccess(data);
+      };
+
+      function cleanup() {
+        clearTimeout(timeout);
+        try { delete window[callbackName]; } catch (e) { window[callbackName] = undefined; }
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      script.onerror = function() {
+        cleanup();
+        onError('Gagal load API. Pastikan Web App Apps Script sudah di-deploy dan aksesnya benar.');
+      };
+
+      script.src = url + (url.indexOf('?') >= 0 ? '&' : '?') + query;
+      document.body.appendChild(script);
+    }
+
+    function showLoader(show) {
+      document.getElementById('loader').classList.toggle('show', !!show);
+    }
+
+    function showError(message) {
+      const box = document.getElementById('errorBox');
+      box.textContent = message;
+      box.style.display = 'block';
+    }
+
+    function hideError() {
+      const box = document.getElementById('errorBox');
+      box.textContent = '';
+      box.style.display = 'none';
+    }
+
+    function buildFilterOptions(records) {
+      const years = unique(records.map(r => r.tahun).filter(Boolean)).sort((a, b) => b - a);
+      const types = unique(records.map(r => r.jenis).filter(Boolean)).sort();
+
+      fillSelect('yearFilter', ['ALL', ...years]);
+      fillSelect('monthFilter', ['ALL', ...monthNames]);
+      fillSelect('typeFilter', ['ALL', ...types]);
+    }
+
+    function fillSelect(id, values) {
+      const select = document.getElementById(id);
+      const current = select.value || 'ALL';
+      select.innerHTML = values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+      if (values.map(String).includes(String(current))) select.value = current;
+    }
+
+    function resetFilter() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('yearFilter').value = 'ALL';
+      document.getElementById('monthFilter').value = 'ALL';
+      document.getElementById('statusFilter').value = 'ALL';
+      document.getElementById('typeFilter').value = 'ALL';
+      render();
+    }
+
+    function getFiltered() {
+      const search = document.getElementById('searchInput').value.trim().toLowerCase();
+      const year = document.getElementById('yearFilter').value;
+      const month = document.getElementById('monthFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      const type = document.getElementById('typeFilter').value;
+
+      return rawData.filter(r => {
+        if (search && !String(r.nama || '').toLowerCase().includes(search)) return false;
+        if (year !== 'ALL' && String(r.tahun) !== String(year)) return false;
+        if (month !== 'ALL' && String(r.bulan) !== String(month)) return false;
+        if (status !== 'ALL' && String(r.status) !== String(status)) return false;
+        if (type !== 'ALL' && String(r.jenis) !== String(type)) return false;
+        return true;
+      });
+    }
+
+    function render() {
+      const records = getFiltered();
+
+      renderKpi(records);
+      renderMonthly(records);
+      renderTypeDonut(records);
+      renderUpcoming(records);
+      renderTopStaff(records);
+      renderAllTable(records);
+
+      document.getElementById('dataInfo').textContent = `${records.length} dari ${rawData.length} data`;
+    }
+
+    function renderKpi(records) {
+      const staffCount = unique(records.map(r => r.nama).filter(Boolean)).length;
+      const totalDays = sum(records.map(r => Number(r.totalHari || 0)));
+      const running = records.filter(r => r.status === 'SEDANG CUTI').length;
+      const future = records.filter(r => r.status === 'AKAN CUTI').length;
+      const passport = records.filter(r => r.ambilPaspor === 'AMBIL PASPOR').length;
+
+      setText('kpiTotal', formatNumber(records.length));
+      setText('kpiStaff', formatNumber(staffCount));
+      setText('kpiDays', formatNumber(totalDays));
+      setText('kpiRunning', formatNumber(running));
+      setText('kpiFuture', formatNumber(future));
+      setText('kpiPassport', formatNumber(passport));
+    }
+
+    function renderMonthly(records) {
+      const data = monthNames.map((month, index) => {
+        const rows = records.filter(r => Number(r.bulanIndex) === index);
+        return {
+          month,
+          count: rows.length,
+          days: sum(rows.map(r => Number(r.totalHari || 0)))
+        };
+      });
+
+      const maxVal = Math.max(...data.map(x => x.count), 1);
+
+      document.getElementById('monthlyChart').innerHTML = data.map(x => {
+        const pct = Math.round((x.count / maxVal) * 100);
+        return `
+          <div class="bar-row">
+            <div>${escapeHtml(x.month)}</div>
+            <div class="bar"><span style="width:${pct}%"></span></div>
+            <div><b>${formatNumber(x.count)}</b></div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('monthInfo').textContent =
+        `${formatNumber(sum(data.map(x => x.count)))} pengajuan`;
+    }
+
+    function renderTypeDonut(records) {
+      const grouped = groupCount(records, 'jenis');
+      const entries = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
+      const total = sum(entries.map(x => x[1]));
+
+      let start = 0;
+      const parts = [];
+
+      entries.forEach(([label, value], index) => {
+        const deg = total ? (value / total) * 360 : 0;
+        const color = typeColors[index % typeColors.length];
+        parts.push(`${color} ${start}deg ${start + deg}deg`);
+        start += deg;
+      });
+
+      document.getElementById('donut').style.background = entries.length
+        ? `conic-gradient(${parts.join(', ')})`
+        : 'rgba(255,255,255,.12)';
+
+      document.getElementById('legend').innerHTML = entries.length
+        ? entries.map(([label, value], index) => {
+            const color = typeColors[index % typeColors.length];
+            const pct = total ? Math.round((value / total) * 100) : 0;
+            return `
+              <div class="legend-item">
+                <span><span class="dot" style="background:${color}"></span>${escapeHtml(label)}</span>
+                <b>${formatNumber(value)} (${pct}%)</b>
+              </div>
+            `;
+          }).join('')
+        : '<div class="empty">Belum ada data.</div>';
+
+      document.getElementById('typeInfo').textContent = `${formatNumber(total)} data`;
+    }
+
+    function renderUpcoming(records) {
+      const today = startOfTodayMs();
+      const rows = records
+        .filter(r => Number(r.endMs || 0) >= today)
+        .sort((a, b) => Number(a.startMs || 0) - Number(b.startMs || 0))
+        .slice(0, 80);
+
+      document.getElementById('upcomingInfo').textContent = `${rows.length} data`;
+
+      document.getElementById('upcomingBody').innerHTML = rows.length
+        ? rows.map(r => `
+          <tr>
+            <td><b>${escapeHtml(r.nama)}</b></td>
+            <td>${escapeHtml(r.jenis)}</td>
+            <td>${escapeHtml(r.ambilPaspor)}</td>
+            <td>${escapeHtml(r.startDisplay)}</td>
+            <td>${escapeHtml(r.endDisplay)}</td>
+            <td><b>${formatNumber(r.totalHari)}</b></td>
+            <td>${statusPill(r.status)}</td>
+            <td>${escapeHtml(r.sumber)}</td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="8" class="empty">Tidak ada cuti berjalan / mendatang.</td></tr>';
+    }
+
+    function renderTopStaff(records) {
+      const map = {};
+
+      records.forEach(r => {
+        const name = r.nama || '-';
+        if (!map[name]) map[name] = { count: 0, days: 0 };
+        map[name].count += 1;
+        map[name].days += Number(r.totalHari || 0);
+      });
+
+      const rows = Object.entries(map)
+        .map(([name, val]) => ({ name, count: val.count, days: val.days }))
+        .sort((a, b) => b.days - a.days || b.count - a.count)
+        .slice(0, 10);
+
+      document.getElementById('topBody').innerHTML = rows.length
+        ? rows.map(r => `
+          <tr>
+            <td><b>${escapeHtml(r.name)}</b></td>
+            <td>${formatNumber(r.count)}</td>
+            <td><b>${formatNumber(r.days)}</b></td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="3" class="empty">Belum ada data.</td></tr>';
+    }
+
+    function renderAllTable(records) {
+      const rows = records
+        .slice()
+        .sort((a, b) => Number(b.startMs || 0) - Number(a.startMs || 0))
+        .slice(0, 500);
+
+      document.getElementById('allBody').innerHTML = rows.length
+        ? rows.map(r => `
+          <tr>
+            <td><b>${escapeHtml(r.nama)}</b></td>
+            <td>${escapeHtml(r.noPaspor || '-')}</td>
+            <td>${escapeHtml(r.jenis)}</td>
+            <td>${escapeHtml(r.ambilPaspor)}</td>
+            <td>${escapeHtml(r.startDisplay)}</td>
+            <td>${escapeHtml(r.endDisplay)}</td>
+            <td><b>${formatNumber(r.totalHari)}</b></td>
+            <td>${statusPill(r.status)}</td>
+            <td>${escapeHtml(r.keterangan || '-')}</td>
+            <td>${escapeHtml(r.sumber)}</td>
+          </tr>
+        `).join('')
+        : '<tr><td colspan="10" class="empty">Belum ada data sesuai filter.</td></tr>';
+    }
+
+    function statusPill(status) {
+      const s = String(status || '-');
+      let cls = 'other';
+      if (s === 'SEDANG CUTI') cls = 'running';
+      else if (s === 'AKAN CUTI') cls = 'future';
+      else if (s === 'SELESAI') cls = 'done';
+
+      return `<span class="pill ${cls}">${escapeHtml(s)}</span>`;
+    }
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function groupCount(records, key) {
+      return records.reduce((acc, r) => {
+        const value = r[key] || '-';
+        acc[value] = (acc[value] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    function unique(arr) {
+      return [...new Set(arr.map(x => String(x)).filter(Boolean))];
+    }
+
+    function sum(arr) {
+      return arr.reduce((a, b) => a + Number(b || 0), 0);
+    }
+
+    function formatNumber(n) {
+      return new Intl.NumberFormat('id-ID').format(Number(n || 0));
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function startOfTodayMs() {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    }
+  </script>
+</body>
+</html>
