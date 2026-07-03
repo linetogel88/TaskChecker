@@ -1026,7 +1026,7 @@
         const removedCount = Math.max(0, rawData.length - activeData.length);
         const belumDisetCount = rawData.filter(r => Number(r.endMs || 0) >= startOfTodayMs() && normalizeJabatan(r.jabatan) === 'BELUM DISET').length;
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • Data unik dihitung: ${activeData.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • Data unik final dihitung: ${activeData.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
@@ -1492,10 +1492,12 @@
 
 
     function staffIdentityKey(record) {
-      const passportKey = normalizePassportClient(record.noPaspor || record.nama);
+      const passportKey = normalizePassportClient(record.noPaspor) || normalizePassportClient(record.nama);
       const nameKey = normalizeStaffNameClient(record.nama);
       return passportKey || nameKey || String(record.nama || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
     }
+
+
 
     function renderMonthlyStaff(records) {
       const selectedYear = document.getElementById('yearFilter').value;
@@ -1541,6 +1543,8 @@
 
 
 
+
+
     function statusPill(status) {
       const s = String(status || '-');
       let cls = 'other';
@@ -1575,15 +1579,11 @@
       const output = [];
 
       records.forEach(r => {
-        const passportKey = normalizePassportClient(r.noPaspor || r.nama);
-        const nameKey = normalizeStaffNameClient(r.nama);
-        const identityKey = passportKey || nameKey || 'NOIDENTITY';
-
+        const identityKey = staffIdentityKey(r);
         const key = [
           identityKey,
           r.startIso || '',
-          r.endIso || '',
-          normalizeJabatan(r.jabatan || '')
+          r.endIso || ''
         ].join('|');
 
         if (!seen.has(key)) {
@@ -1593,24 +1593,38 @@
         }
 
         const existing = seen.get(key);
-
-        if (!existing.noPaspor && r.noPaspor) {
-          existing.noPaspor = r.noPaspor;
-        }
-
-        if (normalizeJabatan(existing.jabatan) === 'BELUM DISET' && normalizeJabatan(r.jabatan) !== 'BELUM DISET') {
-          existing.jabatan = r.jabatan;
-          existing.kuotaCuti = r.kuotaCuti;
-          existing.sumberJabatan = r.sumberJabatan;
-        }
-
-        if (!existing.keterangan && r.keterangan) {
-          existing.keterangan = r.keterangan;
-        }
+        mergeBetterClientRecord(existing, r);
       });
 
       return output;
     }
+
+    function mergeBetterClientRecord(target, source) {
+      if (!target.noPaspor && source.noPaspor) target.noPaspor = source.noPaspor;
+
+      const targetJabatan = normalizeJabatan(target.jabatan);
+      const sourceJabatan = normalizeJabatan(source.jabatan);
+
+      if (jabatanPriorityClient(sourceJabatan) > jabatanPriorityClient(targetJabatan)) {
+        target.jabatan = sourceJabatan;
+        target.kuotaCuti = source.kuotaCuti;
+        target.sumberJabatan = source.sumberJabatan;
+      }
+
+      if (!target.keterangan && source.keterangan) target.keterangan = source.keterangan;
+      if (!target.perihal && source.perihal) target.perihal = source.perihal;
+    }
+
+    function jabatanPriorityClient(jabatan) {
+      const j = normalizeJabatan(jabatan);
+      if (j === 'KAPTEN KASIR') return 4;
+      if (j === 'KASIR CUTI SETAHUN') return 3;
+      if (j === 'KASIR' || j === 'CS') return 2;
+      if (j === 'BELUM DISET') return 0;
+      return 1;
+    }
+
+
 
     function normalizeStaffNameClient(value) {
       return String(value || '')
