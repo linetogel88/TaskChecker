@@ -633,47 +633,7 @@
       font-size: 12px;
       line-height: 1.45;
     }
-
-
-
-    .category-section {
-      margin: 0 0 16px;
-      border: 1px solid rgba(255, 255, 255, .12);
-      border-radius: 18px;
-      overflow: hidden;
-      background: rgba(0, 0, 0, .14);
-    }
-
-    .category-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 14px;
-      background: rgba(250, 204, 21, .12);
-      border-bottom: 1px solid rgba(255, 255, 255, .10);
-      color: var(--gold);
-      font-weight: 900;
-    }
-
-    .category-sub {
-      color: rgba(255, 255, 255, .72);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .category-table {
-      width: 100%;
-      border-collapse: separate;
-      border-spacing: 0;
-      min-width: 980px;
-    }
-
-    .category-table th {
-      top: 0;
-    }
-
-    @media (max-width: 1180px) {
+@media (max-width: 1180px) {
       .filters { grid-template-columns: 1fr 1fr; }
       .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .grid { grid-template-columns: 1fr; }
@@ -852,33 +812,25 @@
 
       <div class="panel">
         <div class="panel-head">
-          <div class="panel-title">Staff Cuti Terbanyak</div>
-          <div id="topInfo" class="mini">Dari hari ini ke depan</div>
+          <div class="panel-title">Total Staff Cuti Tiap Bulan</div>
+          <div id="monthlyStaffInfo" class="mini">Staff unik per bulan</div>
         </div>
         <div class="table-wrap">
           <table style="min-width:460px">
             <thead>
               <tr>
-                <th>Nama Staff</th>
-                <th>Jabatan</th>
-                <th>Jumlah Pengajuan</th>
+                <th>Bulan</th>
+                <th>Total Staff Cuti</th>
+                <th>Total Pengajuan</th>
               </tr>
             </thead>
-            <tbody id="topBody"></tbody>
+            <tbody id="monthlyStaffBody"></tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <section class="panel">
-      <div class="panel-head">
-        <div class="panel-title">Semua Data Cuti Yang Masih Dihitung</div>
-        <div id="dataInfo" class="mini">Dipisah per kategori</div>
-      </div>
-      <div class="table-wrap">
-        <div id="allGroupedBody"></div>
-      </div>
-    </section>
+
 
 
     <div id="cutiModal" class="modal-backdrop" onclick="modalBackdropClick(event)">
@@ -992,10 +944,10 @@
       'KASIR CUTI SETAHUN': { kuota: 25, label: 'Kasir cuti setahun', detail: 'Kuota cuti setahun 25 hari' },
       'KASIR': { kuota: 14, label: 'Kasir', detail: '12 hari + maksimal penambahan cuti 2 hari = 14 hari' },
       'CS': { kuota: 14, label: 'CS', detail: 'Kuota cuti 14 hari' },
-      'BELUM DISET': { kuota: 0, label: 'Belum diset', detail: 'Data lama belum memiliki kategori jabatan' }
+      'BELUM DISET': { kuota: 0, label: 'Tidak ditampilkan', detail: 'Data belum cocok dengan DATA STAFF tidak ditampilkan' }
     };
 
-    const jabatanOrder = ['KASIR CUTI SETAHUN', 'KASIR', 'CS', 'BELUM DISET'];
+    const jabatanOrder = ['KASIR CUTI SETAHUN', 'KAPTEN KASIR', 'KASIR', 'CS'];
 
     document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('todayNote').textContent = 'TODAY MODE AKTIF • Patokan: ' + formatDateIndo(new Date());
@@ -1059,18 +1011,22 @@
         }
 
         meta = payload || {};
-        rawData = Array.isArray(meta.records) ? meta.records : [];
+        rawData = dedupeClientRecords(Array.isArray(meta.records) ? meta.records : []);
 
         // MODE TODAY:
         // Semua data yang tanggal selesai cutinya sudah lewat hari ini tidak dihitung.
-        activeData = rawData.filter(r => Number(r.endMs || 0) >= startOfTodayMs());
+        activeData = rawData.filter(r => {
+          return Number(r.endMs || 0) >= startOfTodayMs()
+            && normalizeJabatan(r.jabatan) !== 'BELUM DISET';
+        });
 
         buildFilterOptions(activeData);
         render();
 
         const removedCount = Math.max(0, rawData.length - activeData.length);
+        const belumDisetCount = rawData.filter(r => Number(r.endMs || 0) >= startOfTodayMs() && normalizeJabatan(r.jabatan) === 'BELUM DISET').length;
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • Data dihitung: ${activeData.length} • Data lewat tidak dihitung: ${removedCount} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • Data unik dihitung: ${activeData.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
@@ -1384,8 +1340,7 @@
       renderMonthly(activeData);
       renderJabatanSummary(records);
       renderUpcoming(records);
-      renderTopStaff(records);
-      renderAllTable(records);
+      renderMonthlyStaff(records);
 
       const monthValue = document.getElementById('monthFilter').value;
       const monthText = monthValue === 'ALL' ? 'semua bulan dari hari ini ke depan' : monthValue;
@@ -1482,7 +1437,7 @@
 
       const rows = jobs.map(j => {
         const data = summaryRecords.filter(r => normalizeJabatan(r.jabatan) === j);
-        const staff = unique(data.map(r => r.nama).filter(Boolean)).length;
+        const staff = unique(data.map(r => staffIdentityKey(r)).filter(Boolean)).length;
         const pengajuan = data.length;
         const mendatang = data.filter(r => String(r.status || '').toUpperCase() === 'AKAN CUTI').length;
         const berjalan = data.filter(r => String(r.status || '').toUpperCase() === 'SEDANG CUTI').length;
@@ -1535,98 +1490,56 @@
         : '<tr><td colspan="8" class="empty">Tidak ada cuti dari hari ini ke depan.</td></tr>';
     }
 
-    function renderTopStaff(records) {
-      const map = {};
 
-      records.forEach(r => {
-        const name = r.nama || '-';
-        const jabatan = normalizeJabatan(r.jabatan);
-        const key = name + '|' + jabatan;
-        if (!map[key]) map[key] = { name: name, jabatan: jabatan, count: 0 };
-        map[key].count += 1;
+    function staffIdentityKey(record) {
+      const passportKey = normalizePassportClient(record.noPaspor || record.nama);
+      const nameKey = normalizeStaffNameClient(record.nama);
+      return passportKey || nameKey || String(record.nama || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    }
+
+    function renderMonthlyStaff(records) {
+      const selectedYear = document.getElementById('yearFilter').value;
+      const selectedJabatan = document.getElementById('jabatanFilter').value;
+      const selectedStaff = document.getElementById('staffFilter').value;
+      const selectedStatus = document.getElementById('statusFilter').value;
+
+      const base = activeData.filter(r => {
+        if (normalizeJabatan(r.jabatan) === 'BELUM DISET') return false;
+        if (selectedYear !== 'ALL' && String(r.tahun) !== String(selectedYear)) return false;
+        if (selectedJabatan !== 'ALL' && normalizeJabatan(r.jabatan) !== selectedJabatan) return false;
+        if (selectedStaff !== 'ALL' && String(r.nama || '') !== String(selectedStaff)) return false;
+        if (selectedStatus !== 'ALL' && String(r.status || '') !== String(selectedStatus)) return false;
+        return true;
       });
 
-      const rows = Object.values(map)
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10);
+      const rows = monthNames.map((month, index) => {
+        const data = base.filter(r => Number(r.bulanIndex) === index);
+        const totalStaff = unique(data.map(r => staffIdentityKey(r)).filter(Boolean)).length;
+        return {
+          month,
+          totalStaff,
+          totalPengajuan: data.length
+        };
+      }).filter(r => r.totalStaff > 0 || r.totalPengajuan > 0);
 
-      document.getElementById('topBody').innerHTML = rows.length
+      document.getElementById('monthlyStaffInfo').textContent = `${formatNumber(sum(rows.map(r => r.totalStaff)))} total staff bulanan`;
+
+      document.getElementById('monthlyStaffBody').innerHTML = rows.length
         ? rows.map(r => `
           <tr>
-            <td><b>${escapeHtml(r.name)}</b></td>
-            <td>${escapeHtml(getJabatanLabel(r.jabatan))}</td>
-            <td><b>${formatNumber(r.count)}</b></td>
+            <td><b>${escapeHtml(r.month)}</b></td>
+            <td><b>${formatNumber(r.totalStaff)}</b></td>
+            <td>${formatNumber(r.totalPengajuan)}</td>
           </tr>
         `).join('')
-        : '<tr><td colspan="3" class="empty">Belum ada data.</td></tr>';
+        : '<tr><td colspan="3" class="empty">Belum ada staff cuti sesuai filter.</td></tr>';
     }
 
     function renderAllTable(records) {
-      const rows = records
-        .slice()
-        .sort((a, b) => {
-          const ja = sortJabatanIndex(normalizeJabatan(a.jabatan));
-          const jb = sortJabatanIndex(normalizeJabatan(b.jabatan));
-          if (ja !== jb) return ja - jb;
-          return String(a.nama || '').localeCompare(String(b.nama || '')) || Number(a.startMs || 0) - Number(b.startMs || 0);
-        })
-        .slice(0, 800);
-
-      const grouped = {};
-      rows.forEach(r => {
-        const j = normalizeJabatan(r.jabatan);
-        if (!grouped[j]) grouped[j] = [];
-        grouped[j].push(r);
-      });
-
-      const jobs = sortJabatan(Object.keys(grouped));
-
-      document.getElementById('allGroupedBody').innerHTML = rows.length
-        ? jobs.map(jabatan => {
-            const data = grouped[jabatan] || [];
-            const staffCount = unique(data.map(r => r.nama).filter(Boolean)).length;
-
-            return `
-              <div class="category-section">
-                <div class="category-header">
-                  <span>${escapeHtml(getJabatanLabel(jabatan))}</span>
-                  <span class="category-sub">${formatNumber(staffCount)} staff • ${formatNumber(data.length)} pengajuan</span>
-                </div>
-                <table class="category-table">
-                  <thead>
-                    <tr>
-                      <th>Nama Staff</th>
-                      <th>No Paspor</th>
-                      <th>Jenis Cuti</th>
-                      <th>Ambil Paspor</th>
-                      <th>Mulai</th>
-                      <th>Selesai</th>
-                      <th>Status</th>
-                      <th>Keterangan</th>
-                      <th>Sumber</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${data.map(r => `
-                      <tr>
-                        <td><b>${escapeHtml(r.nama)}</b></td>
-                        <td>${escapeHtml(r.noPaspor || '-')}</td>
-                        <td>${escapeHtml(r.jenis)}</td>
-                        <td>${escapeHtml(r.ambilPaspor)}</td>
-                        <td>${escapeHtml(r.startDisplay)}</td>
-                        <td>${escapeHtml(r.endDisplay)}</td>
-                        <td>${statusPill(r.status)}</td>
-                        <td>${escapeHtml(r.keterangan || '-')}</td>
-                        <td>${escapeHtml(r.sumber)}</td>
-                      </tr>
-                    `).join('')}
-                  </tbody>
-                </table>
-              </div>
-            `;
-          }).join('')
-        : '<div class="empty">Belum ada data sesuai filter dari hari ini ke depan.</div>';
+      return;
     }
+
+
 
     function statusPill(status) {
       const s = String(status || '-');
@@ -1656,14 +1569,96 @@
       return date.getTime() >= currentMonthStart && date.getTime() < afterNextMonthStart;
     }
 
+
+    function dedupeClientRecords(records) {
+      const seen = new Map();
+      const output = [];
+
+      records.forEach(r => {
+        const passportKey = normalizePassportClient(r.noPaspor || r.nama);
+        const nameKey = normalizeStaffNameClient(r.nama);
+        const identityKey = passportKey || nameKey || 'NOIDENTITY';
+
+        const key = [
+          identityKey,
+          r.startIso || '',
+          r.endIso || '',
+          normalizeJabatan(r.jabatan || '')
+        ].join('|');
+
+        if (!seen.has(key)) {
+          seen.set(key, r);
+          output.push(r);
+          return;
+        }
+
+        const existing = seen.get(key);
+
+        if (!existing.noPaspor && r.noPaspor) {
+          existing.noPaspor = r.noPaspor;
+        }
+
+        if (normalizeJabatan(existing.jabatan) === 'BELUM DISET' && normalizeJabatan(r.jabatan) !== 'BELUM DISET') {
+          existing.jabatan = r.jabatan;
+          existing.kuotaCuti = r.kuotaCuti;
+          existing.sumberJabatan = r.sumberJabatan;
+        }
+
+        if (!existing.keterangan && r.keterangan) {
+          existing.keterangan = r.keterangan;
+        }
+      });
+
+      return output;
+    }
+
+    function normalizeStaffNameClient(value) {
+      return String(value || '')
+        .toUpperCase()
+        .replace(/\(\s*[A-Z]{1,3}\s*[- ]?\s*\d{5,12}\s*\)/g, ' ')
+        .replace(/\b[A-Z]{1,3}\s*[- ]?\s*\d{5,12}\b/g, ' ')
+        .replace(/\bNO\s*PASPOR\b/g, ' ')
+        .replace(/\bNO\s*PASSPORT\b/g, ' ')
+        .replace(/\bPASPOR\b/g, ' ')
+        .replace(/\bPASSPORT\b/g, ' ')
+        .replace(/[^A-Z0-9]/g, '')
+        .trim();
+    }
+
+    function normalizePassportClient(value) {
+      const s = String(value || '').toUpperCase();
+      const m = s.match(/\b([A-Z]{1,3})\s*[- ]?\s*(\d{5,12})\b/);
+      if (m) return (m[1] + m[2]).replace(/[^A-Z0-9]/g, '');
+      return '';
+    }
+
+
     function normalizeJabatan(value) {
       const raw = String(value || '').trim().toUpperCase();
+
       if (!raw) return 'BELUM DISET';
-      if (raw.includes('KASIR') && raw.includes('TAHUN')) return 'KASIR CUTI SETAHUN';
-      if (raw === 'KASIR') return 'KASIR';
-      if (raw === 'CS') return 'CS';
-      return raw;
+
+      if (
+        raw.includes('KASIR CUTI SETAHUN') ||
+        raw.includes('CUTI SETAHUN') ||
+        (raw.includes('KASIR') && raw.includes('TAHUN'))
+      ) {
+        return 'KASIR CUTI SETAHUN';
+      }
+
+      // KAPTEN KASIR tetap kategori sendiri.
+      if (raw.includes('KAPTEN') && raw.includes('KASIR')) return 'KAPTEN KASIR';
+
+      if (raw.includes('KASIR')) return 'KASIR';
+
+      if (/\bCS\b/.test(raw) || raw.includes('CUSTOMER SERVICE')) return 'CS';
+
+      return 'BELUM DISET';
     }
+
+
+
+
 
     function getJabatanLabel(value) {
       const key = normalizeJabatan(value);
@@ -1678,7 +1673,9 @@
     }
 
     function sortJabatan(values) {
-      const arr = unique(values.map(normalizeJabatan));
+      const arr = unique(values.map(normalizeJabatan))
+        .filter(j => j !== 'BELUM DISET');
+
       return arr.sort((a, b) => {
         const ia = jabatanOrder.indexOf(a);
         const ib = jabatanOrder.indexOf(b);
