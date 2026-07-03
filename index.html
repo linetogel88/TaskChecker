@@ -635,6 +635,44 @@
     }
 
 
+
+    .category-section {
+      margin: 0 0 16px;
+      border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, .14);
+    }
+
+    .category-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: rgba(250, 204, 21, .12);
+      border-bottom: 1px solid rgba(255, 255, 255, .10);
+      color: var(--gold);
+      font-weight: 900;
+    }
+
+    .category-sub {
+      color: rgba(255, 255, 255, .72);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .category-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 980px;
+    }
+
+    .category-table th {
+      top: 0;
+    }
+
     @media (max-width: 1180px) {
       .filters { grid-template-columns: 1fr 1fr; }
       .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -696,8 +734,10 @@
 
     <section class="filters">
       <div class="filter">
-        <label>Cari Nama Staff</label>
-        <input id="searchInput" type="text" placeholder="Ketik nama staff..." oninput="render()">
+        <label>Nama Staff</label>
+        <select id="staffFilter" onchange="render()">
+          <option value="ALL">SEMUA STAFF</option>
+        </select>
       </div>
 
       <div class="filter">
@@ -725,7 +765,7 @@
 
       <div class="filter">
         <label>Jabatan</label>
-        <select id="jabatanFilter" onchange="render()">
+        <select id="jabatanFilter" onchange="updateStaffFilterOptions(); render()">
           <option value="ALL">ALL</option>
         </select>
       </div>
@@ -833,26 +873,10 @@
     <section class="panel">
       <div class="panel-head">
         <div class="panel-title">Semua Data Cuti Yang Masih Dihitung</div>
-        <div id="dataInfo" class="mini">-</div>
+        <div id="dataInfo" class="mini">Dipisah per kategori</div>
       </div>
       <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Nama Staff</th>
-              <th>Jabatan</th>
-              <th>No Paspor</th>
-              <th>Jenis Cuti</th>
-              <th>Ambil Paspor</th>
-              <th>Mulai</th>
-              <th>Selesai</th>
-              <th>Status</th>
-              <th>Keterangan</th>
-              <th>Sumber</th>
-            </tr>
-          </thead>
-          <tbody id="allBody"></tbody>
-        </table>
+        <div id="allGroupedBody"></div>
       </div>
     </section>
 
@@ -1292,6 +1316,7 @@
       document.getElementById('monthFilter').value = monthNames[new Date().getMonth()];
 
       fillSelect('jabatanFilter', ['ALL', ...jabatans]);
+      updateStaffFilterOptions();
     }
 
     function fillSelect(id, values, allLabel) {
@@ -1308,7 +1333,7 @@
     }
 
     function resetFilter() {
-      document.getElementById('searchInput').value = '';
+      document.getElementById('staffFilter').value = 'ALL';
       document.getElementById('yearFilter').value = 'ALL';
       document.getElementById('monthFilter').value = monthNames[new Date().getMonth()];
       document.getElementById('statusFilter').value = 'ALL';
@@ -1316,15 +1341,34 @@
       render();
     }
 
+    function updateStaffFilterOptions() {
+      const selectedJabatan = document.getElementById('jabatanFilter') ? document.getElementById('jabatanFilter').value : 'ALL';
+      const current = document.getElementById('staffFilter') ? document.getElementById('staffFilter').value : 'ALL';
+
+      let base = activeData.slice();
+      if (selectedJabatan !== 'ALL') {
+        base = base.filter(r => normalizeJabatan(r.jabatan) === selectedJabatan);
+      }
+
+      const names = unique(base.map(r => r.nama).filter(Boolean)).sort((a, b) => a.localeCompare(b));
+      fillSelect('staffFilter', ['ALL', ...names], 'SEMUA STAFF');
+
+      if (names.includes(current) || current === 'ALL') {
+        document.getElementById('staffFilter').value = current;
+      } else {
+        document.getElementById('staffFilter').value = 'ALL';
+      }
+    }
+
     function getFiltered() {
-      const search = document.getElementById('searchInput').value.trim().toLowerCase();
+      const staff = document.getElementById('staffFilter').value;
       const year = document.getElementById('yearFilter').value;
       const month = document.getElementById('monthFilter').value;
       const status = document.getElementById('statusFilter').value;
       const jabatan = document.getElementById('jabatanFilter').value;
 
       return activeData.filter(r => {
-        if (search && !String(r.nama || '').toLowerCase().includes(search)) return false;
+        if (staff !== 'ALL' && String(r.nama || '') !== String(staff)) return false;
         if (year !== 'ALL' && String(r.tahun) !== String(year)) return false;
         if (month !== 'ALL' && String(r.bulan) !== String(month)) return false;
         if (status !== 'ALL' && String(r.status) !== String(status)) return false;
@@ -1345,7 +1389,7 @@
 
       const monthValue = document.getElementById('monthFilter').value;
       const monthText = monthValue === 'ALL' ? 'semua bulan dari hari ini ke depan' : monthValue;
-      document.getElementById('dataInfo').textContent = `${records.length} data • ${monthText}`;
+      document.getElementById('dataInfo').textContent = `${records.length} data • ${monthText} • dipisah per kategori`;
     }
 
     function renderKpi(records) {
@@ -1369,12 +1413,12 @@
 
     function renderMonthly(records) {
       const selectedYear = document.getElementById('yearFilter').value;
-      const search = document.getElementById('searchInput').value.trim().toLowerCase();
+      const staff = document.getElementById('staffFilter').value;
       const status = document.getElementById('statusFilter').value;
       const selectedJabatan = document.getElementById('jabatanFilter').value;
 
       const base = records.filter(r => {
-        if (search && !String(r.nama || '').toLowerCase().includes(search)) return false;
+        if (staff !== 'ALL' && String(r.nama || '') !== String(staff)) return false;
         if (selectedYear !== 'ALL' && String(r.tahun) !== String(selectedYear)) return false;
         if (status !== 'ALL' && String(r.status) !== String(status)) return false;
         if (selectedJabatan !== 'ALL' && normalizeJabatan(r.jabatan) !== String(selectedJabatan)) return false;
@@ -1520,25 +1564,68 @@
     function renderAllTable(records) {
       const rows = records
         .slice()
-        .sort((a, b) => Number(a.startMs || 0) - Number(b.startMs || 0))
-        .slice(0, 500);
+        .sort((a, b) => {
+          const ja = sortJabatanIndex(normalizeJabatan(a.jabatan));
+          const jb = sortJabatanIndex(normalizeJabatan(b.jabatan));
+          if (ja !== jb) return ja - jb;
+          return String(a.nama || '').localeCompare(String(b.nama || '')) || Number(a.startMs || 0) - Number(b.startMs || 0);
+        })
+        .slice(0, 800);
 
-      document.getElementById('allBody').innerHTML = rows.length
-        ? rows.map(r => `
-          <tr>
-            <td><b>${escapeHtml(r.nama)}</b></td>
-            <td>${escapeHtml(getJabatanLabel(r.jabatan))}</td>
-            <td>${escapeHtml(r.noPaspor || '-')}</td>
-            <td>${escapeHtml(r.jenis)}</td>
-            <td>${escapeHtml(r.ambilPaspor)}</td>
-            <td>${escapeHtml(r.startDisplay)}</td>
-            <td>${escapeHtml(r.endDisplay)}</td>
-            <td>${statusPill(r.status)}</td>
-            <td>${escapeHtml(r.keterangan || '-')}</td>
-            <td>${escapeHtml(r.sumber)}</td>
-          </tr>
-        `).join('')
-        : '<tr><td colspan="10" class="empty">Belum ada data sesuai filter dari hari ini ke depan.</td></tr>';
+      const grouped = {};
+      rows.forEach(r => {
+        const j = normalizeJabatan(r.jabatan);
+        if (!grouped[j]) grouped[j] = [];
+        grouped[j].push(r);
+      });
+
+      const jobs = sortJabatan(Object.keys(grouped));
+
+      document.getElementById('allGroupedBody').innerHTML = rows.length
+        ? jobs.map(jabatan => {
+            const data = grouped[jabatan] || [];
+            const staffCount = unique(data.map(r => r.nama).filter(Boolean)).length;
+
+            return `
+              <div class="category-section">
+                <div class="category-header">
+                  <span>${escapeHtml(getJabatanLabel(jabatan))}</span>
+                  <span class="category-sub">${formatNumber(staffCount)} staff • ${formatNumber(data.length)} pengajuan</span>
+                </div>
+                <table class="category-table">
+                  <thead>
+                    <tr>
+                      <th>Nama Staff</th>
+                      <th>No Paspor</th>
+                      <th>Jenis Cuti</th>
+                      <th>Ambil Paspor</th>
+                      <th>Mulai</th>
+                      <th>Selesai</th>
+                      <th>Status</th>
+                      <th>Keterangan</th>
+                      <th>Sumber</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${data.map(r => `
+                      <tr>
+                        <td><b>${escapeHtml(r.nama)}</b></td>
+                        <td>${escapeHtml(r.noPaspor || '-')}</td>
+                        <td>${escapeHtml(r.jenis)}</td>
+                        <td>${escapeHtml(r.ambilPaspor)}</td>
+                        <td>${escapeHtml(r.startDisplay)}</td>
+                        <td>${escapeHtml(r.endDisplay)}</td>
+                        <td>${statusPill(r.status)}</td>
+                        <td>${escapeHtml(r.keterangan || '-')}</td>
+                        <td>${escapeHtml(r.sumber)}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `;
+          }).join('')
+        : '<div class="empty">Belum ada data sesuai filter dari hari ini ke depan.</div>';
     }
 
     function statusPill(status) {
@@ -1581,6 +1668,13 @@
     function getJabatanLabel(value) {
       const key = normalizeJabatan(value);
       return jabatanRules[key] ? jabatanRules[key].label : key;
+    }
+
+
+    function sortJabatanIndex(value) {
+      const key = normalizeJabatan(value);
+      const idx = jabatanOrder.indexOf(key);
+      return idx === -1 ? 999 : idx;
     }
 
     function sortJabatan(values) {
