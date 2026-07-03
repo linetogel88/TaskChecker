@@ -862,7 +862,7 @@
         <div class="modal-head">
           <div>
             <div class="modal-title">Form Pengajuan Cuti</div>
-            <div class="mini">Data tersimpan ke sheet FORM_PENGAJUAN_CUTI dan langsung ikut rekap.</div>
+            <div class="mini">Data tersimpan ke FORM_PENGAJUAN_CUTI. Jabatan otomatis dicocokkan dari DATA STAFF kolom G.</div>
           </div>
           <button class="modal-close" onclick="closeCutiForm()" type="button">×</button>
         </div>
@@ -895,14 +895,9 @@
                 <label>Nama Staff</label>
                 <input id="formNama" type="text" placeholder="Contoh: PUTRA ANUGRAH RIZKI" oninput="updatePengajuanPreview()" required>
               </div>
-
               <div class="form-field">
-                <label>Jabatan / Kategori Cuti</label>
-                <select id="formJabatan" onchange="updatePengajuanPreview()" required>
-                  <option value="KASIR CUTI SETAHUN">KASIR CUTI SETAHUN - 25 HARI</option>
-                  <option value="KASIR">KASIR - 12 HARI + 2 HARI</option>
-                  <option value="CS">CS - 14 HARI</option>
-                </select>
+                <label>Jabatan</label>
+                <input id="formJabatanInfo" type="text" value="Otomatis dari DATA STAFF kolom G" readonly>
               </div>
 
               <div class="form-field">
@@ -933,7 +928,7 @@
             </div>
 
             <div class="form-hint">
-              Catatan: hasil simpan akan mengikuti format pengajuan di atas dan kategori jabatan disimpan terpisah untuk rekap. Dashboard tetap memakai mode TODAY, jadi data yang sudah lewat tidak masuk hitungan.
+              Catatan: hasil simpan mengikuti format pengajuan di atas. Jabatan diambil otomatis dari sheet DATA STAFF kolom G berdasarkan nama/no paspor dari kolom C dan sekitarnya. Dashboard tetap memakai mode TODAY, jadi data yang sudah lewat tidak masuk hitungan.
             </div>
 
             <div class="form-actions">
@@ -1051,7 +1046,7 @@
 
         const removedCount = Math.max(0, rawData.length - activeData.length);
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • Data dihitung: ${activeData.length} • Data lewat tidak dihitung: ${removedCount} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • Data dihitung: ${activeData.length} • Data lewat tidak dihitung: ${removedCount} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
@@ -1169,7 +1164,7 @@
       const situs = document.getElementById('formSitus').value.trim() || 'Linetogel';
       const nama = document.getElementById('formNama').value.trim();
       const noPaspor = document.getElementById('formPaspor').value.trim();
-      const jabatan = document.getElementById('formJabatan').value;
+      const jabatan = ''; // jabatan otomatis dicocokkan dari sheet DATA STAFF kolom G
       const perihal = document.getElementById('formPerihal').value;
       const startDate = document.getElementById('formStart').value;
       const endDate = document.getElementById('formEnd').value;
@@ -1232,7 +1227,7 @@
       const situs = (document.getElementById('formSitus')?.value || 'Linetogel').trim();
       const perihal = document.getElementById('formPerihal')?.value || 'CUTI AMBIL PASSPORT';
       const noPaspor = (document.getElementById('formPaspor')?.value || '').trim().toUpperCase();
-      const jabatan = document.getElementById('formJabatan')?.value || 'KASIR CUTI SETAHUN';
+      const jabatan = 'OTOMATIS DATA STAFF';
       const nama = (document.getElementById('formNama')?.value || '').trim().toUpperCase();
       const startDate = document.getElementById('formStart')?.value || '';
       const endDate = document.getElementById('formEnd')?.value || '';
@@ -1249,7 +1244,9 @@
         'No Paspor: ' + (noPaspor || '-'),
         'Nama Staff: ' + (nama || '-'),
         'Tanggal Pengajuan: ' + startText + ' - ' + endText + ' ( ' + (totalHari || 0) + ' Hari )',
-        'Keterangan : ' + keterangan
+        'Keterangan : ' + keterangan,
+        '',
+        'Jabatan: otomatis dari DATA STAFF kolom G'
       ].join('\n');
 
       const box = document.getElementById('formatPreview');
@@ -1426,6 +1423,7 @@
       // Khusus panel Kategori Cuti Berdasarkan Jabatan:
       // Data status AKAN CUTI / mendatang hanya dihitung untuk bulan ini dan bulan depan.
       // Status SEDANG CUTI tetap dihitung karena sedang berjalan hari ini.
+      // Total Hari tidak ditampilkan di panel ini supaya tidak rancu dengan kuota jabatan.
       const summaryRecords = records.filter(r => {
         const status = String(r.status || '').toUpperCase();
         if (status === 'SEDANG CUTI') return true;
@@ -1442,13 +1440,10 @@
         const data = summaryRecords.filter(r => normalizeJabatan(r.jabatan) === j);
         const staff = unique(data.map(r => r.nama).filter(Boolean)).length;
         const pengajuan = data.length;
-        const hari = sum(data.map(r => Number(r.totalHari || 0)));
         const mendatang = data.filter(r => String(r.status || '').toUpperCase() === 'AKAN CUTI').length;
         const berjalan = data.filter(r => String(r.status || '').toUpperCase() === 'SEDANG CUTI').length;
         const rule = jabatanRules[j] || { kuota: 0, label: j, detail: 'Kategori khusus' };
-        const totalKuota = rule.kuota && staff ? rule.kuota * staff : rule.kuota;
-        const sisa = totalKuota ? Math.max(totalKuota - hari, 0) : 0;
-        return { jabatan: j, staff, pengajuan, hari, mendatang, berjalan, totalKuota, sisa, rule };
+        return { jabatan: j, staff, pengajuan, mendatang, berjalan, rule };
       });
 
       document.getElementById('jabatanSummary').innerHTML = rows.length
@@ -1464,7 +1459,6 @@
               • Berjalan: <b>${formatNumber(r.berjalan)}</b>
               • Mendatang bulan ini/depan: <b>${formatNumber(r.mendatang)}</b>
               • Total pengajuan: <b>${formatNumber(r.pengajuan)}</b>
-              • Hari: <b>${formatNumber(r.hari)}</b>${r.totalKuota ? ' • Est. sisa kuota: <b>' + formatNumber(r.sisa) + '</b>' : ''}
             </div>
           </div>
         `).join('')
