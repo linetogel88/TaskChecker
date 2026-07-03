@@ -813,7 +813,7 @@
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">Total Staff Cuti Tiap Bulan</div>
-          <div id="monthlyStaffInfo" class="mini">Staff unik per bulan</div>
+          <div id="monthlyStaffInfo" class="mini">Semua bulan dalam tahun terpilih</div>
         </div>
         <div class="table-wrap">
           <table style="min-width:460px">
@@ -931,6 +931,7 @@
 
     let rawData = [];
     let activeData = [];
+    let allValidData = [];
     let meta = null;
 
     const monthNames = [
@@ -1015,18 +1016,20 @@
 
         // MODE TODAY:
         // Semua data yang tanggal selesai cutinya sudah lewat hari ini tidak dihitung.
-        activeData = rawData.filter(r => {
-          return Number(r.endMs || 0) >= startOfTodayMs()
-            && normalizeJabatan(r.jabatan) !== 'BELUM DISET';
-        });
+        // allValidData = semua data valid yang cocok DATA STAFF, termasuk data bulan lalu.
+        // Dipakai untuk rekap bulanan Januari-Desember agar data masa lalu tetap terbaca.
+        allValidData = rawData.filter(r => normalizeJabatan(r.jabatan) !== 'BELUM DISET');
+
+        // activeData = khusus KPI/status aktif dari hari ini ke depan.
+        activeData = allValidData.filter(r => Number(r.endMs || 0) >= startOfTodayMs());
 
         buildFilterOptions(activeData);
         render();
 
         const removedCount = Math.max(0, rawData.length - activeData.length);
-        const belumDisetCount = rawData.filter(r => Number(r.endMs || 0) >= startOfTodayMs() && normalizeJabatan(r.jabatan) === 'BELUM DISET').length;
+        const belumDisetCount = rawData.filter(r => normalizeJabatan(r.jabatan) === 'BELUM DISET').length;
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • Data unik final dihitung: ${activeData.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • Data aktif dihitung: ${activeData.length} • Data bulanan valid: ${allValidData.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
@@ -1301,7 +1304,8 @@
       const selectedJabatan = document.getElementById('jabatanFilter') ? document.getElementById('jabatanFilter').value : 'ALL';
       const current = document.getElementById('staffFilter') ? document.getElementById('staffFilter').value : 'ALL';
 
-      let base = activeData.slice();
+      // Pakai semua data valid, bukan activeData, agar staff bulan Januari/masa lalu tetap muncul di filter.
+      let base = allValidData.length ? allValidData.slice() : activeData.slice();
       if (selectedJabatan !== 'ALL') {
         base = base.filter(r => normalizeJabatan(r.jabatan) === selectedJabatan);
       }
@@ -1505,7 +1509,13 @@
       const selectedStaff = document.getElementById('staffFilter').value;
       const selectedStatus = document.getElementById('statusFilter').value;
 
-      const base = activeData.filter(r => {
+      // Penting:
+      // Untuk "Total Staff Cuti Tiap Bulan", gunakan semua data valid dalam tahun yang dipilih.
+      // Jangan pakai activeData, karena activeData hanya data dari hari ini ke depan.
+      // Ini agar Januari-Februari dan bulan yang sudah lewat tetap terbaca.
+      const source = allValidData.length ? allValidData : rawData;
+
+      const base = source.filter(r => {
         if (normalizeJabatan(r.jabatan) === 'BELUM DISET') return false;
         if (selectedYear !== 'ALL' && String(r.tahun) !== String(selectedYear)) return false;
         if (selectedJabatan !== 'ALL' && normalizeJabatan(r.jabatan) !== selectedJabatan) return false;
@@ -1524,7 +1534,7 @@
         };
       }).filter(r => r.totalStaff > 0 || r.totalPengajuan > 0);
 
-      document.getElementById('monthlyStaffInfo').textContent = `${formatNumber(sum(rows.map(r => r.totalStaff)))} total staff bulanan`;
+      document.getElementById('monthlyStaffInfo').textContent = `${formatNumber(sum(rows.map(r => r.totalStaff)))} total staff bulanan • semua bulan`;
 
       document.getElementById('monthlyStaffBody').innerHTML = rows.length
         ? rows.map(r => `
@@ -1536,6 +1546,8 @@
         `).join('')
         : '<tr><td colspan="3" class="empty">Belum ada staff cuti sesuai filter.</td></tr>';
     }
+
+
 
     function renderAllTable(records) {
       return;
