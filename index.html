@@ -1031,7 +1031,7 @@
         const removedCount = Math.max(0, rawData.length - activeData.length);
         const belumDisetCount = rawData.filter(r => normalizeJabatan(r.jabatan) === 'BELUM DISET').length;
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • API: ${meta.apiVersion || '-'} • Data aktif dihitung: ${activeData.length} • Data TASK CHECKER terbaca: ${monthlyDataAuto.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Mode DATA STAFF: ${(meta.dataStaffMeta && meta.dataStaffMeta.mode) || '-'} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • API: ${meta.apiVersion || '-'} • Fast: ${meta.fastMode ? 'ON' : 'OFF'} • Data aktif dihitung: ${activeData.length} • Data TASK CHECKER terbaca: ${monthlyDataAuto.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Mode DATA STAFF: ${(meta.dataStaffMeta && meta.dataStaffMeta.mode) || '-'} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
@@ -1047,7 +1047,7 @@
       const timeout = setTimeout(function() {
         cleanup();
         onError('Timeout membaca data. Coba cek URL Apps Script atau akses deploy Web App.');
-      }, 30000);
+      }, 60000);
 
       params = params || {};
       params.callback = callbackName;
