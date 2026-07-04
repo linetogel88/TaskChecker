@@ -659,7 +659,7 @@
           <div class="brand">✦ CUTI STAFF DASHBOARD</div>
           <h1>Dashboard Rekap Cuti Staff</h1>
           <p class="subtitle">
-            Semua perhitungan memakai patokan <b>hari ini</b>. KPI aktif tetap memakai patokan hari ini. Rekap cuti tiap bulan menampilkan semua data, baik sebelum maupun sesudah hari ini.
+            Semua perhitungan memakai patokan <b>hari ini</b>. KPI aktif tetap memakai patokan hari ini. Rekap cuti tiap bulan menampilkan semua data cuti, sedangkan PENGAJUAN RESIGN tidak masuk list cuti.
             Total pengajuan dihitung berdasarkan bulan berjalan atau bulan yang dipilih di filter.
           </p>
 
@@ -1031,7 +1031,7 @@
         const removedCount = Math.max(0, rawData.length - activeData.length);
         const belumDisetCount = rawData.filter(r => normalizeJabatan(r.jabatan) === 'BELUM DISET').length;
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • API: ${meta.apiVersion || '-'} • Fast: ${meta.fastMode ? 'ON' : 'OFF'} • Data aktif dihitung: ${activeData.length} • Data TASK CHECKER terbaca: ${monthlyDataAuto.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Mode DATA STAFF: ${(meta.dataStaffMeta && meta.dataStaffMeta.mode) || '-'} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • API: ${meta.apiVersion || '-'} • Fast: ${meta.fastMode ? 'ON' : 'OFF'} • Resign: dipisahkan • Data aktif dihitung: ${activeData.length} • Data TASK CHECKER terbaca: ${monthlyDataAuto.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Mode DATA STAFF: ${(meta.dataStaffMeta && meta.dataStaffMeta.mode) || '-'} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
