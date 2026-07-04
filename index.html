@@ -813,7 +813,7 @@
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">Total Staff Cuti Tiap Bulan</div>
-          <div id="monthlyStaffInfo" class="mini">Semua bulan dalam tahun terpilih</div>
+          <div id="monthlyStaffInfo" class="mini">Sumber DATA_CUTI_AUTO / Tanggal Mulai</div>
         </div>
         <div class="table-wrap">
           <table style="min-width:460px">
@@ -932,6 +932,7 @@
     let rawData = [];
     let activeData = [];
     let allValidData = [];
+    let monthlyDataAuto = [];
     let meta = null;
 
     const monthNames = [
@@ -1013,6 +1014,7 @@
 
         meta = payload || {};
         rawData = dedupeClientRecords(Array.isArray(meta.records) ? meta.records : []);
+        monthlyDataAuto = dedupeClientRecords(Array.isArray(meta.monthlyRecords) ? meta.monthlyRecords : []);
 
         // MODE TODAY:
         // Semua data yang tanggal selesai cutinya sudah lewat hari ini tidak dihitung.
@@ -1029,7 +1031,7 @@
         const removedCount = Math.max(0, rawData.length - activeData.length);
         const belumDisetCount = rawData.filter(r => normalizeJabatan(r.jabatan) === 'BELUM DISET').length;
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • Data aktif dihitung: ${activeData.length} • Data bulanan valid: ${allValidData.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • Data aktif dihitung: ${activeData.length} • Data DATA_CUTI_AUTO: ${monthlyDataAuto.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
@@ -1305,7 +1307,7 @@
       const current = document.getElementById('staffFilter') ? document.getElementById('staffFilter').value : 'ALL';
 
       // Pakai semua data valid, bukan activeData, agar staff bulan Januari/masa lalu tetap muncul di filter.
-      let base = allValidData.length ? allValidData.slice() : activeData.slice();
+      let base = monthlyDataAuto.length ? monthlyDataAuto.slice() : (allValidData.length ? allValidData.slice() : activeData.slice());
       if (selectedJabatan !== 'ALL') {
         base = base.filter(r => normalizeJabatan(r.jabatan) === selectedJabatan);
       }
@@ -1509,11 +1511,10 @@
       const selectedStaff = document.getElementById('staffFilter').value;
       const selectedStatus = document.getElementById('statusFilter').value;
 
-      // Penting:
-      // Untuk "Total Staff Cuti Tiap Bulan", gunakan semua data valid dalam tahun yang dipilih.
-      // Jangan pakai activeData, karena activeData hanya data dari hari ini ke depan.
-      // Ini agar Januari-Februari dan bulan yang sudah lewat tetap terbaca.
-      const source = allValidData.length ? allValidData : rawData;
+      // Permintaan:
+      // Jumlah orang cuti per bulan diambil khusus dari sheet DATA_CUTI_AUTO,
+      // berdasarkan kolom Tanggal Mulai.
+      const source = monthlyDataAuto.length ? monthlyDataAuto : allValidData;
 
       const base = source.filter(r => {
         if (normalizeJabatan(r.jabatan) === 'BELUM DISET') return false;
@@ -1525,6 +1526,7 @@
       });
 
       const rows = monthNames.map((month, index) => {
+        // bulanIndex berasal dari Tanggal Mulai DATA_CUTI_AUTO.
         const data = base.filter(r => Number(r.bulanIndex) === index);
         const totalStaff = unique(data.map(r => staffIdentityKey(r)).filter(Boolean)).length;
         return {
@@ -1534,7 +1536,8 @@
         };
       }).filter(r => r.totalStaff > 0 || r.totalPengajuan > 0);
 
-      document.getElementById('monthlyStaffInfo').textContent = `${formatNumber(sum(rows.map(r => r.totalStaff)))} total staff bulanan • semua bulan`;
+      document.getElementById('monthlyStaffInfo').textContent =
+        `${formatNumber(sum(rows.map(r => r.totalStaff)))} total staff bulanan • sumber DATA_CUTI_AUTO / Tanggal Mulai`;
 
       document.getElementById('monthlyStaffBody').innerHTML = rows.length
         ? rows.map(r => `
@@ -1544,8 +1547,10 @@
             <td>${formatNumber(r.totalPengajuan)}</td>
           </tr>
         `).join('')
-        : '<tr><td colspan="3" class="empty">Belum ada staff cuti sesuai filter.</td></tr>';
+        : '<tr><td colspan="3" class="empty">Belum ada staff cuti sesuai DATA_CUTI_AUTO.</td></tr>';
     }
+
+
 
 
 
