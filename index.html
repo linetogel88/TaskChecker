@@ -1031,7 +1031,7 @@
         const removedCount = Math.max(0, rawData.length - activeData.length);
         const belumDisetCount = rawData.filter(r => normalizeJabatan(r.jabatan) === 'BELUM DISET').length;
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • API: ${meta.apiVersion || '-'} • Fast: ${meta.fastMode ? 'ON' : 'OFF'} • Resign: dipisahkan • Data aktif dihitung: ${activeData.length} • Data TASK CHECKER terbaca: ${monthlyDataAuto.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Mode DATA STAFF: ${(meta.dataStaffMeta && meta.dataStaffMeta.mode) || '-'} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • API: ${meta.apiVersion || '-'} • Fast: ${meta.fastMode ? 'ON' : 'OFF'} • Resign: dipisahkan • Double list: fix • Data aktif dihitung: ${activeData.length} • Data TASK CHECKER terbaca: ${monthlyDataAuto.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Mode DATA STAFF: ${(meta.dataStaffMeta && meta.dataStaffMeta.mode) || '-'} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
@@ -1481,12 +1481,17 @@
     }
 
     function renderUpcoming(records) {
-      const rows = records
+      // FIX DOUBLE:
+      // List mendatang wajib dedupe lagi khusus tampilan.
+      // Data sama dari TASK CHECKER / FORM atau data dengan/ tanpa No Paspor
+      // tidak boleh tampil dua kali.
+      const rows = dedupeUpcomingRecords(records)
         .slice()
         .sort((a, b) => Number(a.startMs || 0) - Number(b.startMs || 0))
         .slice(0, 80);
 
-      document.getElementById('upcomingInfo').textContent = `${rows.length} data`;
+      document.getElementById('upcomingInfo').textContent =
+        `${rows.length} data unik`;
 
       document.getElementById('upcomingBody').innerHTML = rows.length
         ? rows.map(r => `
@@ -1503,6 +1508,8 @@
         `).join('')
         : '<tr><td colspan="8" class="empty">Tidak ada cuti dari hari ini ke depan.</td></tr>';
     }
+
+
 
 
     function staffIdentityKey(record) {
@@ -1600,30 +1607,88 @@
     }
 
 
+
+    function buildClientDedupeAliasKeys(record) {
+      const dateKey = [
+        record.startIso || '',
+        record.endIso || ''
+      ].join('|');
+
+      const keys = [];
+      const passportKey = normalizePassportClient(record.noPaspor) || normalizePassportClient(record.nama);
+      const nameKey = normalizeStaffNameClient(record.nama);
+
+      if (passportKey) keys.push('P|' + passportKey + '|' + dateKey);
+      if (nameKey) keys.push('N|' + nameKey + '|' + dateKey);
+
+      if (!keys.length) {
+        keys.push('X|NOIDENTITY|' + dateKey + '|' + String(record.sumber || ''));
+      }
+
+      return keys;
+    }
+
+    function findExistingClientDedupeKey(seen, keys) {
+      for (let i = 0; i < keys.length; i++) {
+        if (seen.has(keys[i])) return keys[i];
+      }
+      return '';
+    }
+
+    function registerClientDedupeKeys(seen, keys, record) {
+      keys.forEach(k => seen.set(k, record));
+    }
+
+    function dedupeUpcomingRecords(records) {
+      const seen = new Map();
+      const output = [];
+
+      records.forEach(r => {
+        const keys = buildClientDedupeAliasKeys(r);
+        const hitKey = findExistingClientDedupeKey(seen, keys);
+
+        if (!hitKey) {
+          registerClientDedupeKeys(seen, keys, r);
+          output.push(r);
+          return;
+        }
+
+        const existing = seen.get(hitKey);
+        mergeBetterClientRecord(existing, r);
+
+        registerClientDedupeKeys(seen, buildClientDedupeAliasKeys(existing), existing);
+        registerClientDedupeKeys(seen, keys, existing);
+      });
+
+      return output;
+    }
+
+
     function dedupeClientRecords(records) {
       const seen = new Map();
       const output = [];
 
       records.forEach(r => {
-        const identityKey = staffIdentityKey(r);
-        const key = [
-          identityKey,
-          r.startIso || '',
-          r.endIso || ''
-        ].join('|');
+        const keys = buildClientDedupeAliasKeys(r);
+        const hitKey = findExistingClientDedupeKey(seen, keys);
 
-        if (!seen.has(key)) {
-          seen.set(key, r);
+        if (!hitKey) {
+          registerClientDedupeKeys(seen, keys, r);
           output.push(r);
           return;
         }
 
-        const existing = seen.get(key);
+        const existing = seen.get(hitKey);
         mergeBetterClientRecord(existing, r);
+
+        registerClientDedupeKeys(seen, buildClientDedupeAliasKeys(existing), existing);
+        registerClientDedupeKeys(seen, keys, existing);
       });
 
       return output;
     }
+
+
 
     function mergeBetterClientRecord(target, source) {
       if (!target.noPaspor && source.noPaspor) target.noPaspor = source.noPaspor;
