@@ -1029,7 +1029,7 @@
         const removedCount = Math.max(0, rawData.length - activeData.length);
         const belumDisetCount = rawData.filter(r => normalizeJabatan(r.jabatan) === 'BELUM DISET').length;
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • Data aktif dihitung: ${activeData.length} • Data bulanan valid: ${allValidData.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • Data aktif dihitung: ${activeData.length} • Data bulanan valid: ${allValidData.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
