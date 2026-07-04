@@ -813,7 +813,7 @@
       <div class="panel">
         <div class="panel-head">
           <div class="panel-title">Total Staff Cuti Tiap Bulan</div>
-          <div id="monthlyStaffInfo" class="mini">Semua tanggal dari DATA_CUTI_AUTO</div>
+          <div id="monthlyStaffInfo" class="mini">Sumber TASK CHECKER LINETOGEL 2026</div>
         </div>
         <div class="table-wrap">
           <table style="min-width:460px">
@@ -1031,7 +1031,7 @@
         const removedCount = Math.max(0, rawData.length - activeData.length);
         const belumDisetCount = rawData.filter(r => normalizeJabatan(r.jabatan) === 'BELUM DISET').length;
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • API: ${meta.apiVersion || '-'} • Data aktif dihitung: ${activeData.length} • Data bulanan DATA_CUTI_AUTO semua tanggal: ${monthlyDataAuto.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • API: ${meta.apiVersion || '-'} • Data aktif dihitung: ${activeData.length} • Data TASK CHECKER terbaca: ${monthlyDataAuto.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
@@ -1380,7 +1380,7 @@
 
       // Rekap bulanan wajib menampilkan semua data,
       // baik sebelum hari ini maupun sesudah hari ini.
-      // Sumber utama: DATA_CUTI_AUTO berdasarkan Tanggal Mulai.
+      // Sumber utama: TASK CHECKER LINETOGEL 2026. Bulan dibaca dari Tanggal Pengajuan setiap Nama Staff.
       const source = monthlyDataAuto.length ? monthlyDataAuto : allValidData;
 
       const base = source.filter(r => {
@@ -1427,7 +1427,7 @@
       }).join('');
 
       document.getElementById('monthInfo').textContent =
-        `${formatNumber(sum(matrix.map(x => x.total)))} pengajuan bulanan • sebelum & sesudah hari ini`;
+        `${formatNumber(sum(matrix.map(x => x.total)))} pengajuan bulanan • sumber TASK CHECKER`;
     }
 
 
@@ -1519,7 +1519,7 @@
       const selectedStaff = document.getElementById('staffFilter').value;
       const selectedStatus = document.getElementById('statusFilter').value;
 
-      // Jumlah orang cuti per bulan diambil dari DATA_CUTI_AUTO,
+      // Jumlah orang cuti per bulan diambil dari TASK CHECKER LINETOGEL 2026,
       // berdasarkan Tanggal Mulai, tanpa patokan hari ini.
       // Jadi data sebelum hari ini dan sesudah hari ini tetap tampil.
       const source = monthlyDataAuto.length ? monthlyDataAuto : allValidData;
@@ -1544,7 +1544,7 @@
       }).filter(r => r.totalStaff > 0 || r.totalPengajuan > 0);
 
       document.getElementById('monthlyStaffInfo').textContent =
-        `${formatNumber(sum(rows.map(r => r.totalStaff)))} total staff bulanan • semua tanggal`;
+        `${formatNumber(sum(rows.map(r => r.totalStaff)))} total staff bulanan • sumber TASK CHECKER`;
 
       document.getElementById('monthlyStaffBody').innerHTML = rows.length
         ? rows.map(r => `
@@ -1554,7 +1554,7 @@
             <td>${formatNumber(r.totalPengajuan)}</td>
           </tr>
         `).join('')
-        : '<tr><td colspan="3" class="empty">Belum ada staff cuti sesuai DATA_CUTI_AUTO.</td></tr>';
+        : '<tr><td colspan="3" class="empty">Belum ada staff cuti sesuai TASK CHECKER LINETOGEL 2026.</td></tr>';
     }
 
 
