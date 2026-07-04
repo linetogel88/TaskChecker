@@ -838,7 +838,7 @@
         <div class="modal-head">
           <div>
             <div class="modal-title">Form Pengajuan Cuti</div>
-            <div class="mini">Data tersimpan ke FORM_PENGAJUAN_CUTI. Jabatan otomatis dicocokkan dari DATA STAFF kolom G.</div>
+            <div class="mini">Data tersimpan ke FORM_PENGAJUAN_CUTI. Jabatan otomatis dicocokkan dari DATA STAFF sesuai header Jabatan.</div>
           </div>
           <button class="modal-close" onclick="closeCutiForm()" type="button">×</button>
         </div>
@@ -873,7 +873,7 @@
               </div>
               <div class="form-field">
                 <label>Jabatan</label>
-                <input id="formJabatanInfo" type="text" value="Otomatis dari DATA STAFF kolom G" readonly>
+                <input id="formJabatanInfo" type="text" value="Otomatis dari DATA STAFF sesuai header Jabatan" readonly>
               </div>
 
               <div class="form-field">
@@ -904,7 +904,7 @@
             </div>
 
             <div class="form-hint">
-              Catatan: hasil simpan mengikuti format pengajuan di atas. Jabatan diambil otomatis dari sheet DATA STAFF kolom G berdasarkan nama/no paspor dari kolom C dan sekitarnya. Dashboard tetap memakai mode TODAY, jadi data yang sudah lewat tidak masuk hitungan.
+              Catatan: hasil simpan mengikuti format pengajuan di atas. Jabatan diambil otomatis dari sheet DATA STAFF sesuai header Jabatan berdasarkan nama/no paspor dari kolom C dan sekitarnya. Dashboard tetap memakai mode TODAY, jadi data yang sudah lewat tidak masuk hitungan.
             </div>
 
             <div class="form-actions">
@@ -1031,7 +1031,7 @@
         const removedCount = Math.max(0, rawData.length - activeData.length);
         const belumDisetCount = rawData.filter(r => normalizeJabatan(r.jabatan) === 'BELUM DISET').length;
         document.getElementById('footer').textContent =
-          `Update: ${meta.generatedAt || '-'} • API: ${meta.apiVersion || '-'} • Data aktif dihitung: ${activeData.length} • Data TASK CHECKER terbaca: ${monthlyDataAuto.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
+          `Update: ${meta.generatedAt || '-'} • API: ${meta.apiVersion || '-'} • Data aktif dihitung: ${activeData.length} • Data TASK CHECKER terbaca: ${monthlyDataAuto.length} • Data lewat/belum valid tidak dihitung: ${removedCount} • Belum cocok DATA STAFF: ${belumDisetCount} • Mentah terbaca: ${formatNumber(meta.rawRecordCountBeforeDedupe || 0)} • Valid jabatan: ${formatNumber(meta.validJabatanCount || 0)} • Data staff: ${formatNumber(meta.dataStaffTotal || 0)} • Mode DATA STAFF: ${(meta.dataStaffMeta && meta.dataStaffMeta.mode) || '-'} • Sheet sumber: ${(meta.sourceSheetNames || []).join(', ')}`;
 
         showLoader(false);
         hideSetup();
@@ -1149,7 +1149,7 @@
       const situs = document.getElementById('formSitus').value.trim() || 'Linetogel';
       const nama = document.getElementById('formNama').value.trim();
       const noPaspor = document.getElementById('formPaspor').value.trim();
-      const jabatan = ''; // jabatan otomatis dicocokkan dari sheet DATA STAFF kolom G
+      const jabatan = ''; // jabatan otomatis dicocokkan dari sheet DATA STAFF sesuai header Jabatan
       const perihal = document.getElementById('formPerihal').value;
       const startDate = document.getElementById('formStart').value;
       const endDate = document.getElementById('formEnd').value;
@@ -1231,7 +1231,7 @@
         'Tanggal Pengajuan: ' + startText + ' - ' + endText + ' ( ' + (totalHari || 0) + ' Hari )',
         'Keterangan : ' + keterangan,
         '',
-        'Jabatan: otomatis dari DATA STAFF kolom G'
+        'Jabatan: otomatis dari DATA STAFF sesuai header Jabatan'
       ].join('\n');
 
       const box = document.getElementById('formatPreview');
